@@ -1,0 +1,53 @@
+PROJEKT: Comic-Archiv - macOS Desktop App
+
+TECHNOLOGIE-STACK:
+- Sprache: Swift 5.9+
+- UI: SwiftUI
+- Plattform: macOS 13.0+ (Ventura)
+- Persistenz: SwiftData (bevorzugt) oder Core Data
+- Architektur: MVVM Pattern
+
+PROJEKT-KONTEXT:
+Dies ist eine native macOS Desktop-Anwendung zur Verwaltung einer persönlichen Comic-Sammlung. Die App ermöglicht das Archivieren von Comics mit Cover-Bildern, die Organisation in flexiblen, benutzerdefinierten Listen und das Verschieben von Comics zwischen Listen per Drag & Drop.
+
+DATENMODELL:
+Comic: titel, autor, zeichner, verlag, erscheinungsdatum, nummer, coverBild, gelesen-Status
+Liste: name, icon (optional), comicIDs, istHauptliste
+
+ENTWICKLUNGS-PHILOSOPHIE:
+- Schritt-für-Schritt vorgehen (iteratives "Vibe Coding")
+- Jedes Feature erst lauffähig machen, dann verbessern
+- Code sollte gut kommentiert sein (auf Deutsch für Erklärungen)
+- SwiftUI Best Practices folgen
+- Native macOS Look & Feel
+
+CODE-STYLE:
+- Swift Naming Conventions (camelCase, PascalCase für Types)
+- Aussagekräftige Namen (Deutsch für Fachbegriffe wie "Comic", "Liste", Englisch für technische Begriffe)
+- Kommentare auf Deutsch für komplexe Logik
+- Strukturierte Datei-Organisation (Models, Views, ViewModels, Services)
+
+LERN-ANSATZ:
+Der Nutzer lernt Swift/SwiftUI durch praktisches Programmieren mit AI-Unterstützung. Erklärungen sollten:
+- Kurz und prägnant sein
+- Swift-spezifische Konzepte erklären wenn sie neu sind
+- Best Practices aufzeigen
+- Alternativen erwähnen wenn sinnvoll
+
+FEATURES (Priorität):
+1. Basis-Layout (Sidebar + Grid)
+2. Comic hinzufügen/bearbeiten/löschen
+3. Listen erstellen/verwalten
+4. Drag & Drop zwischen Listen
+5. Cover-Bild Upload und Anzeige
+6. Datenpersistenz
+
+WICHTIG:
+- Immer vollständigen, lauffähigen Code generieren
+- SwiftUI Previews einbauen wo möglich
+- Fehlerbehandlung nicht vergessen
+- macOS Human Interface Guidelines beachten
+- Code sollte auf einem Mac mit Xcode kompilierbar sein
+
+ZIEL:
+Eine professionelle, nützliche macOS App erstellen, während der Nutzer Swift/SwiftUI und AI-gestütztes Programmieren lernt.
