@@ -14,6 +14,7 @@ struct ComicDetailView: View {
     let onDelete: () -> Void
 
     @State private var title: String
+    @State private var series: String
     @State private var author: String
     @State private var artist: String
     @State private var publisher: String
@@ -21,8 +22,11 @@ struct ComicDetailView: View {
     @State private var releaseDate: Date
     @State private var readStatus: ReadStatus
     @State private var priority: Priority
+    @State private var format: ComicFormat
     @State private var genre: String
     @State private var notes: String
+    @State private var rating: Double
+    @State private var seriesLengthText: String
     @State private var coverImage: NSImage?
     @State private var showingDeleteAlert = false
 
@@ -30,16 +34,20 @@ struct ComicDetailView: View {
         self.comic = comic
         self.viewModel = viewModel
         self.onDelete = onDelete
-        _title       = State(initialValue: comic.title)
-        _author      = State(initialValue: comic.author)
-        _artist      = State(initialValue: comic.artist)
-        _publisher   = State(initialValue: comic.publisher)
-        _issueNumber = State(initialValue: comic.issueNumber)
-        _releaseDate = State(initialValue: comic.releaseDate)
-        _readStatus  = State(initialValue: comic.readStatus)
-        _priority    = State(initialValue: comic.priority)
-        _genre       = State(initialValue: comic.genre)
-        _notes       = State(initialValue: comic.notes)
+        _title            = State(initialValue: comic.title)
+        _series           = State(initialValue: comic.series)
+        _author           = State(initialValue: comic.author)
+        _artist           = State(initialValue: comic.artist)
+        _publisher        = State(initialValue: comic.publisher)
+        _issueNumber      = State(initialValue: comic.issueNumber)
+        _releaseDate      = State(initialValue: comic.releaseDate)
+        _readStatus       = State(initialValue: comic.readStatus)
+        _priority         = State(initialValue: comic.priority)
+        _format           = State(initialValue: comic.format)
+        _genre            = State(initialValue: comic.genre)
+        _notes            = State(initialValue: comic.notes)
+        _rating           = State(initialValue: comic.rating)
+        _seriesLengthText = State(initialValue: comic.seriesLength.map(String.init) ?? "")
         if let fileName = comic.coverImageName {
             _coverImage = State(initialValue: ImageManager.shared.loadImage(named: fileName))
         }
@@ -50,11 +58,22 @@ struct ComicDetailView: View {
             Form {
                 Section("Comic Details") {
                     TextField("Title",          text: $title)
+                    TextField("Series",         text: $series)
+                    TextField("Issue / Volume", text: $issueNumber)
                     TextField("Author",         text: $author)
                     TextField("Artist",         text: $artist)
                     TextField("Publisher",      text: $publisher)
-                    TextField("Issue / Volume", text: $issueNumber)
                     TextField("Genre",          text: $genre)
+                    HStack {
+                        Text("Series Length")
+                        Spacer()
+                        TextField("Unknown", text: $seriesLengthText)
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 80)
+                            .onChange(of: seriesLengthText) { _, val in
+                                seriesLengthText = val.filter(\.isNumber)
+                            }
+                    }
                 }
 
                 Section("Status") {
@@ -63,10 +82,20 @@ struct ComicDetailView: View {
                             Label(s.label, systemImage: s.icon).tag(s)
                         }
                     }
+                    Picker("Format", selection: $format) {
+                        ForEach(ComicFormat.allCases, id: \.self) { f in
+                            Label(f.label, systemImage: f.icon).tag(f)
+                        }
+                    }
                     Picker("Priority", selection: $priority) {
                         ForEach(Priority.allCases, id: \.self) { p in
                             Label(p.label, systemImage: p.icon).tag(p)
                         }
+                    }
+                    HStack {
+                        Text("Rating")
+                        Spacer()
+                        StarRatingPicker(rating: $rating)
                     }
                     DatePicker("Release Date", selection: $releaseDate, displayedComponents: .date)
                 }
@@ -154,15 +183,19 @@ struct ComicDetailView: View {
     }
 
     private func saveChanges() {
-        comic.title       = title
-        comic.author      = author
-        comic.artist      = artist
-        comic.publisher   = publisher
-        comic.issueNumber = issueNumber
-        comic.releaseDate = releaseDate
-        comic.genre       = genre
-        comic.notes       = notes
-        comic.priority    = priority
+        comic.title        = title
+        comic.series       = series
+        comic.author       = author
+        comic.artist       = artist
+        comic.publisher    = publisher
+        comic.issueNumber  = issueNumber
+        comic.releaseDate  = releaseDate
+        comic.genre        = genre
+        comic.notes        = notes
+        comic.priority     = priority
+        comic.format       = format
+        comic.rating       = rating
+        comic.seriesLength = seriesLengthText.isEmpty ? nil : Int(seriesLengthText)
 
         if readStatus == .finished && comic.readStatus != .finished {
             comic.lastReadAt = Date()

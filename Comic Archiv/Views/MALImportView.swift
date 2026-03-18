@@ -15,6 +15,7 @@ struct MALImportView: View {
     let viewModel: ComicViewModel
 
     @State private var phase: ImportPhase = .idle
+    @State private var isAuthenticated = false
     @State private var entries:   [MALMangaEntry] = []
     @State private var selected:  Set<Int>        = []
     @State private var errorText: String?
@@ -68,7 +69,9 @@ struct MALImportView: View {
             VStack(spacing: 8) {
                 Text("Import Your MAL Manga List")
                     .font(.title2).fontWeight(.semibold)
-                Text("This will open MyAnimeList in your browser to authorize Comic Archiv, then import your manga as comics.")
+                Text(isAuthenticated
+                     ? "Fetch your latest manga list from MyAnimeList. Already imported volumes will be skipped."
+                     : "This will open MyAnimeList in your browser to authorize Comic Archiv, then import your manga as comics.")
                     .font(.body).foregroundStyle(.secondary)
                     .multilineTextAlignment(.center).padding(.horizontal, 32)
             }
@@ -80,22 +83,44 @@ struct MALImportView: View {
             }
 
             VStack(spacing: 12) {
-                Button {
-                    startAuthorize()
-                } label: {
-                    Label("Connect to MyAnimeList", systemImage: "arrow.up.right.square")
-                        .frame(maxWidth: 280)
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
+                if isAuthenticated {
+                    Button {
+                        Task { await fetchList() }
+                    } label: {
+                        Label("Fetch Latest from MAL", systemImage: "arrow.clockwise")
+                            .frame(maxWidth: 280)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
 
-                Text("You'll be redirected to myanimelist.net to log in.\nComic Archiv never stores your MAL password.")
-                    .font(.caption).foregroundStyle(.tertiary)
-                    .multilineTextAlignment(.center)
+                    Button("Disconnect") {
+                        Task {
+                            await MALImportService.shared.logout()
+                            isAuthenticated = false
+                        }
+                    }
+                    .font(.subheadline).foregroundStyle(.secondary)
+                } else {
+                    Button {
+                        startAuthorize()
+                    } label: {
+                        Label("Connect to MyAnimeList", systemImage: "arrow.up.right.square")
+                            .frame(maxWidth: 280)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+
+                    Text("You'll be redirected to myanimelist.net to log in.\nComic Archiv never stores your MAL password.")
+                        .font(.caption).foregroundStyle(.tertiary)
+                        .multilineTextAlignment(.center)
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(32)
+        .task {
+            isAuthenticated = await MALImportService.shared.isAuthenticated
+        }
     }
 
     // MARK: - Progress
@@ -145,7 +170,7 @@ struct MALImportView: View {
                 .font(.system(size: 64)).foregroundStyle(.green)
             Text("Import Complete")
                 .font(.title2).fontWeight(.semibold)
-            Text("\(importedComics) volumes added to your collection.")
+            Text(importedComics == 0 ? "Everything is already up to date." : "\(importedComics) new volumes added to your collection.")
                 .font(.body).foregroundStyle(.secondary)
             Button("Done") { dismiss() }
                 .buttonStyle(.borderedProminent)
@@ -198,6 +223,10 @@ struct MALImportView: View {
             let descriptor = FetchDescriptor<ComicList>(predicate: #Predicate { $0.isMainCollection })
             let mainCollection = try? modelContext.fetch(descriptor).first
 
+            // Build a set of existing title+issueNumber pairs for duplicate detection
+            let existingComics = (try? modelContext.fetch(FetchDescriptor<Comic>())) ?? []
+            let existingKeys = Set(existingComics.map { "\($0.title)||||\($0.issueNumber)" })
+
             let defaultDate: Date = {
                 var c = DateComponents(); c.year = 1900; c.month = 1; c.day = 1
                 return Calendar.current.date(from: c) ?? Date()
@@ -233,21 +262,27 @@ struct MALImportView: View {
                     coverImage = NSImage(data: data)
                 }
 
-                // One Comic per volume read
+                // One Comic per volume read — skip already imported volumes
                 for vol in 1...numRead {
+                    let issueNumber = "Vol. \(vol)"
+                    let key = "\(node.title)||||\(issueNumber)"
+                    guard !existingKeys.contains(key) else { continue }
+
                     let volStatus: ReadStatus = (vol < numRead) ? .finished
                         : (entry.listStatus?.readStatus ?? .finished)
 
                     let comic = Comic(
-                        title:       node.title,
-                        author:      authors.joined(separator: ", "),
-                        artist:      artists.joined(separator: ", "),
-                        publisher:   "",
-                        releaseDate: releaseDate ?? defaultDate,
-                        issueNumber: "Vol. \(vol)",
-                        readStatus:  volStatus,
-                        priority:    .medium,
-                        genre:       genres
+                        title:        node.title,
+                        author:       authors.joined(separator: ", "),
+                        artist:       artists.joined(separator: ", "),
+                        publisher:    "",
+                        releaseDate:  releaseDate ?? defaultDate,
+                        issueNumber:  issueNumber,
+                        readStatus:   volStatus,
+                        priority:     .medium,
+                        genre:        genres,
+                        series:       node.title,
+                        seriesLength: node.numVolumes
                     )
                     if let image = coverImage { viewModel.setCoverImage(image, for: comic) }
                     if let list = mainCollection { viewModel.addComic(comic, toList: list) }

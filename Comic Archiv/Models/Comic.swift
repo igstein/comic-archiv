@@ -34,6 +34,25 @@ enum ReadStatus: String, Codable, CaseIterable {
     }
 }
 
+enum ComicFormat: String, Codable, CaseIterable {
+    case physical = "physical"
+    case digital  = "digital"
+
+    var label: String {
+        switch self {
+        case .physical: return "Physical"
+        case .digital:  return "Digital"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .physical: return "book.closed.fill"
+        case .digital:  return "ipad"
+        }
+    }
+}
+
 enum Priority: String, Codable, CaseIterable {
     case mustRead = "mustRead"
     case high     = "high"
@@ -82,6 +101,10 @@ final class Comic {
     var priority: Priority
     var genre: String
     var notes: String
+    var series: String
+    var seriesLength: Int?
+    var rating: Double
+    var format: ComicFormat
     var lastReadAt: Date?
     var createdAt: Date
 
@@ -107,7 +130,11 @@ final class Comic {
         readStatus: ReadStatus = .unread,
         priority: Priority = .medium,
         genre: String = "",
-        notes: String = ""
+        notes: String = "",
+        series: String = "",
+        seriesLength: Int? = nil,
+        rating: Double = 0.0,
+        format: ComicFormat = .physical
     ) {
         self.id = UUID()
         self.title = title
@@ -121,6 +148,10 @@ final class Comic {
         self.priority = priority
         self.genre = genre
         self.notes = notes
+        self.series = series
+        self.seriesLength = seriesLength
+        self.rating = rating
+        self.format = format
         self.lastReadAt = nil
         self.createdAt = Date()
         self.lists = []

@@ -24,7 +24,11 @@ struct AddComicSheet: View {
     }()
     @State private var readStatus: ReadStatus = .unread
     @State private var priority: Priority = .medium
+    @State private var format: ComicFormat = .physical
     @State private var genre = ""
+    @State private var series = ""
+    @State private var seriesLengthText = ""
+    @State private var rating: Double = 0.0
     @State private var coverImage: NSImage?
 
     var body: some View {
@@ -34,11 +38,22 @@ struct AddComicSheet: View {
 
                 Section("Comic Details") {
                     TextField("Title",          text: $title)
+                    TextField("Series",         text: $series)
+                    TextField("Issue / Volume", text: $issueNumber)
                     TextField("Author",         text: $author)
                     TextField("Artist",         text: $artist)
                     TextField("Publisher",      text: $publisher)
-                    TextField("Issue / Volume", text: $issueNumber)
                     TextField("Genre",          text: $genre)
+                    HStack {
+                        Text("Series Length")
+                        Spacer()
+                        TextField("Unknown", text: $seriesLengthText)
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 80)
+                            .onChange(of: seriesLengthText) { _, val in
+                                seriesLengthText = val.filter(\.isNumber)
+                            }
+                    }
                 }
 
                 Section("Status") {
@@ -47,10 +62,20 @@ struct AddComicSheet: View {
                             Label(s.label, systemImage: s.icon).tag(s)
                         }
                     }
+                    Picker("Format", selection: $format) {
+                        ForEach(ComicFormat.allCases, id: \.self) { f in
+                            Label(f.label, systemImage: f.icon).tag(f)
+                        }
+                    }
                     Picker("Priority", selection: $priority) {
                         ForEach(Priority.allCases, id: \.self) { p in
                             Label(p.label, systemImage: p.icon).tag(p)
                         }
+                    }
+                    HStack {
+                        Text("Rating")
+                        Spacer()
+                        StarRatingPicker(rating: $rating)
                     }
                     DatePicker("Release Date", selection: $releaseDate, displayedComponents: .date)
                 }
@@ -136,7 +161,10 @@ struct AddComicSheet: View {
         let newComic = Comic(
             title: title, author: author, artist: artist, publisher: publisher,
             releaseDate: releaseDate, issueNumber: issueNumber,
-            readStatus: readStatus, priority: priority, genre: genre
+            readStatus: readStatus, priority: priority, genre: genre,
+            series: series,
+            seriesLength: seriesLengthText.isEmpty ? nil : Int(seriesLengthText),
+            rating: rating, format: format
         )
         if let image = coverImage { viewModel.setCoverImage(image, for: newComic) }
         viewModel.addComic(newComic, toList: targetList)
