@@ -18,6 +18,7 @@ struct MainView: View {
     @State private var searchText = ""
     @State private var readFilter: ReadFilter = .all
     @State private var selectedComicFromSuggestion: Comic?
+    @State private var showingMALImport = false
 
     enum SortOrder: String, CaseIterable {
         case title     = "Title"
@@ -109,6 +110,13 @@ struct MainView: View {
                     Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
                 }
                 .help("Filter by read status")
+
+                Button {
+                    showingMALImport = true
+                } label: {
+                    Label("Import from MAL", systemImage: "arrow.down.circle")
+                }
+                .help("Import manga from MyAnimeList")
             }
         }
         .onAppear {
@@ -123,6 +131,11 @@ struct MainView: View {
         .sheet(isPresented: $showingAddComic) {
             if let viewModel = viewModel {
                 AddComicSheet(viewModel: viewModel, targetList: selectedList)
+            }
+        }
+        .sheet(isPresented: $showingMALImport) {
+            if let viewModel = viewModel {
+                MALImportView(viewModel: viewModel)
             }
         }
         .sheet(item: $selectedComicFromSuggestion) { comic in

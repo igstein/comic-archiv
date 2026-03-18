@@ -4,5 +4,16 @@
 <dict>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.entertainment</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>comicarchiv.callback</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>comicarchiv</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

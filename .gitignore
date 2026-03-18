@@ -34,5 +34,8 @@ Icon?
 .build/
 .swiftpm/
 
+# Secrets (never commit)
+**/Config/Secrets.swift
+
 # Temporary files
 *.tmp
