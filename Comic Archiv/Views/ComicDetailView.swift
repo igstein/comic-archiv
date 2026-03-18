@@ -10,64 +10,74 @@ import UniformTypeIdentifiers
 struct ComicDetailView: View {
     @Environment(\.dismiss) private var dismiss
     let comic: Comic
-    
     let viewModel: ComicViewModel
     let onDelete: () -> Void
-    
-    // State für Bearbeitung (Kopie der Daten)
-    @State private var titel: String
-    @State private var autor: String
-    @State private var zeichner: String
-    @State private var verlag: String
-    @State private var nummer: String
-    @State private var erscheinungsdatum: Date
-    @State private var gelesen: Bool
+
+    @State private var title: String
+    @State private var author: String
+    @State private var artist: String
+    @State private var publisher: String
+    @State private var issueNumber: String
+    @State private var releaseDate: Date
+    @State private var readStatus: ReadStatus
+    @State private var priority: Priority
+    @State private var genre: String
+    @State private var notes: String
     @State private var coverImage: NSImage?
-    
     @State private var showingDeleteAlert = false
-    
+
     init(comic: Comic, viewModel: ComicViewModel, onDelete: @escaping () -> Void) {
         self.comic = comic
         self.viewModel = viewModel
         self.onDelete = onDelete
-        
-        // Initialisiere State mit aktuellen Werten
-        _titel = State(initialValue: comic.titel)
-        _autor = State(initialValue: comic.autor)
-        _zeichner = State(initialValue: comic.zeichner)
-        _verlag = State(initialValue: comic.verlag)
-        _nummer = State(initialValue: comic.nummer)
-        _erscheinungsdatum = State(initialValue: comic.erscheinungsdatum)
-        _gelesen = State(initialValue: comic.gelesen)
-        
-        // Lade Cover-Bild falls vorhanden
-        if let fileName = comic.coverBildName {
+        _title       = State(initialValue: comic.title)
+        _author      = State(initialValue: comic.author)
+        _artist      = State(initialValue: comic.artist)
+        _publisher   = State(initialValue: comic.publisher)
+        _issueNumber = State(initialValue: comic.issueNumber)
+        _releaseDate = State(initialValue: comic.releaseDate)
+        _readStatus  = State(initialValue: comic.readStatus)
+        _priority    = State(initialValue: comic.priority)
+        _genre       = State(initialValue: comic.genre)
+        _notes       = State(initialValue: comic.notes)
+        if let fileName = comic.coverImageName {
             _coverImage = State(initialValue: ImageManager.shared.loadImage(named: fileName))
         }
     }
-    
+
     var body: some View {
         NavigationStack {
             Form {
-                Section("Comic-Details") {
-                    TextField("Titel", text: $titel)
-                    TextField("Autor", text: $autor)
-                    TextField("Zeichner", text: $zeichner)
-                    TextField("Verlag", text: $verlag)
-                    TextField("Nummer/Band", text: $nummer)
+                Section("Comic Details") {
+                    TextField("Title",          text: $title)
+                    TextField("Author",         text: $author)
+                    TextField("Artist",         text: $artist)
+                    TextField("Publisher",      text: $publisher)
+                    TextField("Issue / Volume", text: $issueNumber)
+                    TextField("Genre",          text: $genre)
                 }
-                
-                Section("Weitere Informationen") {
-                    DatePicker("Erscheinungsdatum",
-                             selection: $erscheinungsdatum,
-                             displayedComponents: .date)
-                    
-                    Toggle("Gelesen", isOn: $gelesen)
+
+                Section("Status") {
+                    Picker("Read Status", selection: $readStatus) {
+                        ForEach(ReadStatus.allCases, id: \.self) { s in
+                            Label(s.label, systemImage: s.icon).tag(s)
+                        }
+                    }
+                    Picker("Priority", selection: $priority) {
+                        ForEach(Priority.allCases, id: \.self) { p in
+                            Label(p.label, systemImage: p.icon).tag(p)
+                        }
+                    }
+                    DatePicker("Release Date", selection: $releaseDate, displayedComponents: .date)
                 }
-                
-                Section("Cover-Bild") {
+
+                Section("Notes") {
+                    TextEditor(text: $notes)
+                        .frame(minHeight: 80)
+                }
+
+                Section("Cover Image") {
                     VStack(spacing: 12) {
-                        // Cover anzeigen
                         if let image = coverImage {
                             Image(nsImage: image)
                                 .resizable()
@@ -79,47 +89,32 @@ struct ComicDetailView: View {
                                 RoundedRectangle(cornerRadius: 8)
                                     .fill(Color.gray.opacity(0.2))
                                     .frame(height: 300)
-                                
                                 VStack {
                                     Image(systemName: "book.closed")
-                                        .font(.system(size: 60))
-                                        .foregroundStyle(.gray)
-                                    
-                                    Text("Kein Cover vorhanden")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
+                                        .font(.system(size: 60)).foregroundStyle(.gray)
+                                    Text("No cover image")
+                                        .font(.caption).foregroundStyle(.secondary)
                                 }
                             }
                         }
-                        
-                        // Buttons
                         HStack {
-                            Button {
-                                selectImage()
-                            } label: {
-                                Label(coverImage == nil ? "Cover hinzufügen" : "Cover ändern",
-                                      systemImage: "photo")
+                            Button { selectImage() } label: {
+                                Label(coverImage == nil ? "Add Cover" : "Change Cover", systemImage: "photo")
                             }
-                            
                             if coverImage != nil {
-                                Button(role: .destructive) {
-                                    coverImage = nil
-                                } label: {
-                                    Label("Cover entfernen", systemImage: "trash")
+                                Button(role: .destructive) { coverImage = nil } label: {
+                                    Label("Remove", systemImage: "trash")
                                 }
                             }
                         }
                     }
                 }
-                
+
                 Section {
                     HStack {
                         Spacer()
-                        Button(role: .destructive) {
-                            showingDeleteAlert = true
-                        } label: {
-                            Label("Comic löschen", systemImage: "trash")
-                                .font(.headline)
+                        Button(role: .destructive) { showingDeleteAlert = true } label: {
+                            Label("Delete Comic", systemImage: "trash").font(.headline)
                         }
                         .buttonStyle(.borderedProminent)
                         .tint(.red)
@@ -129,78 +124,60 @@ struct ComicDetailView: View {
                 }
             }
             .formStyle(.grouped)
-            .navigationTitle("Comic bearbeiten")
+            .navigationTitle("Edit Comic")
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Abbrechen") {
-                        dismiss()
-                    }
-                }
-                
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Speichern") {
-                        saveChanges()
-                    }
-                }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { Button("Save") { saveChanges() } }
             }
-            .alert("Comic löschen?", isPresented: $showingDeleteAlert) {
-                Button("Abbrechen", role: .cancel) { }
-                Button("Löschen", role: .destructive) {
-                    deleteComic()
-                }
+            .alert("Delete Comic?", isPresented: $showingDeleteAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("Delete", role: .destructive) { deleteComic() }
             } message: {
-                Text("Möchtest du '\(comic.titel)' wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.")
+                Text("Delete '\(comic.title)'? This cannot be undone.")
             }
         }
         .frame(minWidth: 500, minHeight: 600)
     }
-    
-    // MARK: - Image Selection
-    
+
     private func selectImage() {
-        
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
         panel.canChooseFiles = true
         panel.allowedContentTypes = [.png, .jpeg, .heic, .gif, .bmp, .tiff]
-        panel.message = "Wähle ein Cover-Bild"
-        
+        panel.message = "Choose a cover image"
         panel.begin { response in
-            guard response == .OK, let url = panel.url else {
-                return
-            }
-            
-            if let image = NSImage(contentsOf: url) {
-                coverImage = image
-            }
+            guard response == .OK, let url = panel.url,
+                  let image = NSImage(contentsOf: url) else { return }
+            coverImage = image
         }
     }
-    
-    // MARK: - Save & Delete
-    
+
     private func saveChanges() {
-        
-        // Textfelder übernehmen
-        comic.titel = titel
-        comic.autor = autor
-        comic.zeichner = zeichner
-        comic.verlag = verlag
-        comic.nummer = nummer
-        comic.erscheinungsdatum = erscheinungsdatum
-        comic.gelesen = gelesen
-        
-        // Cover-Bild speichern
+        comic.title       = title
+        comic.author      = author
+        comic.artist      = artist
+        comic.publisher   = publisher
+        comic.issueNumber = issueNumber
+        comic.releaseDate = releaseDate
+        comic.genre       = genre
+        comic.notes       = notes
+        comic.priority    = priority
+
+        if readStatus == .finished && comic.readStatus != .finished {
+            comic.lastReadAt = Date()
+        }
+        comic.readStatus = readStatus
+
         if let image = coverImage {
             viewModel.setCoverImage(image, for: comic)
-        } else if comic.coverBildName != nil {
+        } else if comic.coverImageName != nil {
             viewModel.removeCoverImage(from: comic)
         }
-        
         viewModel.updateComic(comic)
         dismiss()
     }
-    
+
     private func deleteComic() {
         viewModel.deleteComic(comic)
         onDelete()

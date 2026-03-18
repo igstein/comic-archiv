@@ -8,235 +8,171 @@ import SwiftData
 import UniformTypeIdentifiers
 
 struct SidebarView: View {
-    let listen: [ComicListe]
+    let lists: [ComicList]
     let comics: [Comic]
-    @Binding var selectedListe: ComicListe?
+    @Binding var selectedList: ComicList?
     let viewModel: ComicViewModel?
-    
-    @State private var showingAddListe = false
+
+    @State private var showingAddList = false
     @State private var showingAddReadingOrder = false
-    @State private var listeToEdit: ComicListe?
-    @State private var listeToDelete: ComicListe?
+    @State private var listToEdit: ComicList?
+    @State private var listToDelete: ComicList?
     @State private var showingDeleteAlert = false
-    @State private var dropTargetListe: ComicListe?
-    
-    private var normaleListen: [ComicListe] {
-        listen.filter { !$0.istReadingOrder && !$0.istHauptliste && !$0.istWishlist }
+    @State private var dropTargetList: ComicList?
+
+    private var mainCollection: ComicList? { lists.first { $0.isMainCollection } }
+    private var wishlist: ComicList?       { lists.first { $0.isWishlist } }
+
+    private var regularLists: [ComicList] {
+        lists.filter { !$0.isReadingOrder && !$0.isMainCollection && !$0.isWishlist }
             .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
     }
-    
-    private var hauptliste: ComicListe? {
-        listen.first { $0.istHauptliste }
-    }
-    
-    private var wishlist: ComicListe? {
-        listen.first { $0.istWishlist }
-    }
-    
-    private var readingOrders: [ComicListe] {
-        listen.filter { $0.istReadingOrder }
+
+    private var readingOrders: [ComicList] {
+        lists.filter { $0.isReadingOrder }
             .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
     }
-    
+
     var body: some View {
-        List(selection: $selectedListe) {
-            // System-Listen (immer oben)
-            Section("Listen") {
-                // 1. Meine Sammlung
-                if let hauptliste = hauptliste {
-                    ListeRowView(
-                        liste: hauptliste,
-                        isDropTarget: dropTargetListe?.id == hauptliste.id,
-                        onEdit: {
-                            listeToEdit = hauptliste
-                        },
-                        onDelete: {
-                            // Kann nicht gelöscht werden
-                        }
+        List(selection: $selectedList) {
+            Section("Lists") {
+                if let mainCollection {
+                    ListRowView(
+                        list: mainCollection,
+                        isDropTarget: dropTargetList?.id == mainCollection.id,
+                        onEdit: { listToEdit = mainCollection },
+                        onDelete: { }
                     )
-                    .tag(hauptliste)
-                    .onDrop(
-                        of: [UTType.text],
-                        isTargeted: createBinding(for: hauptliste)
-                    ) { providers in
-                        handleDrop(providers: providers, toListe: hauptliste)
+                    .tag(mainCollection)
+                    .onDrop(of: [UTType.text], isTargeted: createBinding(for: mainCollection)) { providers in
+                        handleDrop(providers: providers, toList: mainCollection)
                     }
                 }
-                
-                // 2. Wishlist
-                if let wishlist = wishlist {
-                    WishlistSidebarRowView(liste: wishlist)
-                        .tag(wishlist)
+
+                if let wishlist {
+                    WishlistSidebarRowView(list: wishlist).tag(wishlist)
                 }
-                
-                // 3. Normale Listen (alphabetisch sortiert)
-                ForEach(normaleListen) { liste in
-                    ListeRowView(
-                        liste: liste,
-                        isDropTarget: dropTargetListe?.id == liste.id,
-                        onEdit: {
-                            listeToEdit = liste
-                        },
-                        onDelete: {
-                            listeToDelete = liste
-                            showingDeleteAlert = true
-                        }
+
+                ForEach(regularLists) { list in
+                    ListRowView(
+                        list: list,
+                        isDropTarget: dropTargetList?.id == list.id,
+                        onEdit: { listToEdit = list },
+                        onDelete: { listToDelete = list; showingDeleteAlert = true }
                     )
-                    .tag(liste)
-                    .onDrop(
-                        of: [UTType.text],
-                        isTargeted: createBinding(for: liste)
-                    ) { providers in
-                        handleDrop(providers: providers, toListe: liste)
+                    .tag(list)
+                    .onDrop(of: [UTType.text], isTargeted: createBinding(for: list)) { providers in
+                        handleDrop(providers: providers, toList: list)
                     }
                 }
             }
-            
-            // Reading Orders
+
             Section("Reading Orders") {
-                ForEach(readingOrders) { liste in
+                ForEach(readingOrders) { list in
                     ReadingOrderRowView(
-                        liste: liste,
-                        onEdit: {
-                            listeToEdit = liste
-                        },
-                        onDelete: {
-                            listeToDelete = liste
-                            showingDeleteAlert = true
-                        },
+                        list: list,
+                        onEdit: { listToEdit = list },
+                        onDelete: { listToDelete = list; showingDeleteAlert = true },
                         viewModel: viewModel,
                         allComics: comics
                     )
-                    .tag(liste)
+                    .tag(list)
                 }
             }
         }
         .navigationTitle("Comic Archiv")
         .toolbar {
             ToolbarItem(placement: .automatic) {
-                Button {
-                    showingAddListe = true
-                } label: {
-                    Label("Neue Liste", systemImage: "plus")
+                Button { showingAddList = true } label: {
+                    Label("New List", systemImage: "plus")
                 }
             }
-            
             ToolbarItem(placement: .automatic) {
-                Button {
-                    showingAddReadingOrder = true
-                } label: {
-                    Label("Neue Reading Order", systemImage: "list.number")
+                Button { showingAddReadingOrder = true } label: {
+                    Label("New Reading Order", systemImage: "list.number")
                 }
             }
         }
-        .sheet(isPresented: $showingAddListe) {
-            if let viewModel = viewModel {
-                AddListeSheet(viewModel: viewModel)
-            }
+        .sheet(isPresented: $showingAddList) {
+            if let viewModel { AddListSheet(viewModel: viewModel) }
         }
         .sheet(isPresented: $showingAddReadingOrder) {
-            if let viewModel = viewModel {
-                AddReadingOrderSheet(viewModel: viewModel)
-            }
+            if let viewModel { AddReadingOrderSheet(viewModel: viewModel) }
         }
-        .sheet(item: $listeToEdit) { liste in
-            if let viewModel = viewModel {
-                EditListeSheet(liste: liste, viewModel: viewModel)
-            }
+        .sheet(item: $listToEdit) { list in
+            if let viewModel { EditListSheet(list: list, viewModel: viewModel) }
         }
-        .alert("Liste löschen?", isPresented: $showingDeleteAlert) {
-            Button("Abbrechen", role: .cancel) { }
-            Button("Löschen", role: .destructive) {
-                if let liste = listeToDelete {
-                    deleteListe(liste)
-                }
+        .alert("Delete List?", isPresented: $showingDeleteAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                if let list = listToDelete { deleteList(list) }
             }
         } message: {
-            if let liste = listeToDelete {
-                if liste.istReadingOrder {
-                    Text("Möchtest du die Reading Order '\(liste.name)' wirklich löschen? Die Comics bleiben erhalten.")
-                } else {
-                    Text("Möchtest du die Liste '\(liste.name)' wirklich löschen? Die Comics bleiben erhalten.")
-                }
+            if let list = listToDelete {
+                Text(list.isReadingOrder
+                     ? "Delete the reading order '\(list.name)'? Your comics will not be affected."
+                     : "Delete the list '\(list.name)'? Your comics will not be affected.")
             }
         }
     }
-    
-    private func createBinding(for liste: ComicListe) -> Binding<Bool> {
+
+    private func createBinding(for list: ComicList) -> Binding<Bool> {
         Binding(
-            get: { dropTargetListe?.id == liste.id },
+            get: { dropTargetList?.id == list.id },
             set: { isTargeted in
-                if isTargeted {
-                    dropTargetListe = liste
-                } else if dropTargetListe?.id == liste.id {
-                    dropTargetListe = nil
-                }
+                if isTargeted { dropTargetList = list }
+                else if dropTargetList?.id == list.id { dropTargetList = nil }
             }
         )
     }
-    
-    private func handleDrop(providers: [NSItemProvider], toListe liste: ComicListe) -> Bool {
+
+    private func handleDrop(providers: [NSItemProvider], toList list: ComicList) -> Bool {
         guard let provider = providers.first else { return false }
-        
-        provider.loadItem(forTypeIdentifier: UTType.text.identifier, options: nil) { item, error in
+        provider.loadItem(forTypeIdentifier: UTType.text.identifier, options: nil) { item, _ in
             guard let data = item as? Data,
                   let uuidString = String(data: data, encoding: .utf8),
                   let uuid = UUID(uuidString: uuidString),
                   let comic = comics.first(where: { $0.id == uuid }),
-                  let viewModel = viewModel else {
-                return
-            }
-            
+                  let viewModel else { return }
             DispatchQueue.main.async {
-                viewModel.addComicToListe(comic, liste: liste)
-                dropTargetListe = nil
+                viewModel.addComicToList(comic, list: list)
+                dropTargetList = nil
             }
         }
-        
         return true
     }
-    
-    private func deleteListe(_ liste: ComicListe) {
-        if selectedListe?.id == liste.id {
-            selectedListe = listen.first
-        }
-        viewModel?.deleteListe(liste)
+
+    private func deleteList(_ list: ComicList) {
+        if selectedList?.id == list.id { selectedList = lists.first }
+        viewModel?.deleteList(list)
     }
 }
 
-// Bestehende Row-View für normale Listen
-struct ListeRowView: View {
-    let liste: ComicListe
+// MARK: - List Row
+
+struct ListRowView: View {
+    let list: ComicList
     let isDropTarget: Bool
     let onEdit: () -> Void
     let onDelete: () -> Void
-    
+
     var body: some View {
         HStack(spacing: 8) {
-            // Icon
-            if let iconName = liste.icon {
+            if let iconName = list.icon {
                 Image(systemName: iconName)
-                    .foregroundStyle(liste.istHauptliste ? .blue : (liste.istWishlist ? .orange : .secondary))
+                    .foregroundStyle(list.isMainCollection ? .blue : .secondary)
                     .font(.body)
                     .frame(width: 20)
             }
-            
-            // Name
-            Text(liste.name)
-                .fontWeight(liste.istHauptliste ? .semibold : .regular)
-            
+            Text(list.name)
+                .fontWeight(list.isMainCollection ? .semibold : .regular)
             Spacer()
-            
-            // Comic-Anzahl
-            Text("\(liste.comics.count)")
+            Text("\(list.comics.count)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)
-                .background(
-                    Capsule()
-                        .fill(Color.secondary.opacity(0.15))
-                )
+                .background(Capsule().fill(Color.secondary.opacity(0.15)))
         }
         .padding(.vertical, 6)
         .padding(.horizontal, 8)
@@ -246,67 +182,56 @@ struct ListeRowView: View {
         )
         .contentShape(Rectangle())
         .contextMenu {
-            Button {
-                onEdit()
-            } label: {
-                Label("Umbenennen", systemImage: "pencil")
-            }
-            
-            if !liste.istHauptliste && !liste.istWishlist {
+            Button { onEdit() } label: { Label("Rename", systemImage: "pencil") }
+            if !list.isMainCollection && !list.isWishlist {
                 Divider()
-                
-                Button(role: .destructive) {
-                    onDelete()
-                } label: {
-                    Label("Löschen", systemImage: "trash")
-                }
+                Button(role: .destructive) { onDelete() } label: { Label("Delete", systemImage: "trash") }
             }
         }
     }
 }
 
-// Row-View für Reading Orders (vereinfacht)
+// MARK: - Reading Order Row
+
 struct ReadingOrderRowView: View {
-    let liste: ComicListe
+    let list: ComicList
     let onEdit: () -> Void
     let onDelete: () -> Void
     let viewModel: ComicViewModel?
     let allComics: [Comic]
-    
+
     @State private var isDropTarget = false
     @State private var showingDuplicateAlert = false
-    
+
     private var progressText: String {
-        if let progress = liste.readingProgress, progress.gesamt > 0 {
-            return "\(progress.gelesen)/\(progress.gesamt) gelesen"
+        if let p = list.readingProgress, p.total > 0 {
+            return "\(p.read)/\(p.total) read"
         }
         return ""
     }
-    
+
     var body: some View {
         HStack(spacing: 8) {
-            // Icon
-            Image(systemName: liste.icon ?? "list.number")
+            Image(systemName: list.icon ?? "list.number")
                 .foregroundStyle(.orange)
                 .font(.body)
                 .frame(width: 20)
-            
-            // Name & Fortschritt
+
             VStack(alignment: .leading, spacing: 2) {
-                Text(liste.name)
-                    .fontWeight(.regular)
-                
+                Text(list.name).fontWeight(.regular)
                 if !progressText.isEmpty {
-                    Text(progressText)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                    Text(progressText).font(.caption2).foregroundStyle(.secondary)
                 }
             }
-            
+
             Spacer()
-            
-            // Entry-Anzahl Badge
-            badgeView
+
+            Text("\(list.readingOrderEntries.count)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(Capsule().fill(Color.orange.opacity(0.15)))
         }
         .padding(.vertical, 6)
         .padding(.horizontal, 8)
@@ -319,130 +244,57 @@ struct ReadingOrderRowView: View {
             handleComicDrop(providers: providers)
         }
         .contextMenu {
-            contextMenuContent
+            Button { onEdit() } label: { Label("Rename", systemImage: "pencil") }
+            Divider()
+            Button(role: .destructive) { onDelete() } label: { Label("Delete", systemImage: "trash") }
         }
-        .alert("Comic bereits vorhanden", isPresented: $showingDuplicateAlert) {
+        .alert("Already in Reading Order", isPresented: $showingDuplicateAlert) {
             Button("OK", role: .cancel) { }
         } message: {
-            Text("Dieser Comic ist bereits in dieser Reading Order enthalten.")
+            Text("This comic is already in this reading order.")
         }
     }
-    
-    private var badgeView: some View {
-        Text("\(liste.readingOrderEntries.count)")
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(
-                Capsule()
-                    .fill(Color.orange.opacity(0.15))
-            )
-    }
-    
-    @ViewBuilder
-    private var contextMenuContent: some View {
-        Button {
-            onEdit()
-        } label: {
-            Label("Umbenennen", systemImage: "pencil")
-        }
-        
-        Divider()
-        
-        Button(role: .destructive) {
-            onDelete()
-        } label: {
-            Label("Löschen", systemImage: "trash")
-        }
-    }
-    
-    // MARK: - Drop Handler
-    
+
     private func handleComicDrop(providers: [NSItemProvider]) -> Bool {
         guard let provider = providers.first else { return false }
-        
-        provider.loadItem(forTypeIdentifier: UTType.text.identifier, options: nil) { item, error in
+        provider.loadItem(forTypeIdentifier: UTType.text.identifier, options: nil) { item, _ in
             guard let data = item as? Data,
                   let uuidString = String(data: data, encoding: .utf8),
                   let uuid = UUID(uuidString: uuidString),
                   let comic = allComics.first(where: { $0.id == uuid }),
-                  let viewModel = viewModel else {
-                return
-            }
-            
+                  let viewModel else { return }
             DispatchQueue.main.async {
-                let success = viewModel.addComicToReadingOrder(comic, readingOrder: liste)
-                if !success {
+                if !viewModel.addComicToReadingOrder(comic, readingOrder: list) {
                     showingDuplicateAlert = true
                 }
             }
         }
-        
         return true
     }
 }
 
-// Row-View für Wishlist
-struct WishlistRowView: View {
-    let liste: ComicListe
-    
-    var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: liste.icon ?? "cart")
-                .foregroundStyle(.orange)
-                .font(.body)
-                .frame(width: 20)
-            
-            Text(liste.name)
-                .fontWeight(.regular)
-            
-            Spacer()
-            
-            // Anzahl der Platzhalter (wird spÃ¤ter befÃ¼llt)
-            Text("0")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(
-                    Capsule()
-                        .fill(Color.orange.opacity(0.15))
-                )
-        }
-        .padding(.vertical, 6)
-        .padding(.horizontal, 8)
-        .contentShape(Rectangle())
-    }
-}
+// MARK: - Wishlist Sidebar Row
 
-// Wishlist Row mit Platzhalter-Count
 struct WishlistSidebarRowView: View {
-    let liste: ComicListe
-    
+    let list: ComicList
+
     @Query(filter: #Predicate<PlaceholderComic> { $0.inWishlist == true })
     private var placeholders: [PlaceholderComic]
-    
+
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: liste.icon ?? "cart")
+            Image(systemName: list.icon ?? "cart")
                 .foregroundStyle(.orange)
                 .font(.body)
                 .frame(width: 20)
-            
-            Text(liste.name)
-            
+            Text(list.name)
             Spacer()
-            
             Text("\(placeholders.count)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)
-                .background(
-                    Capsule()
-                        .fill(Color.orange.opacity(0.15))
-                )
+                .background(Capsule().fill(Color.orange.opacity(0.15)))
         }
         .padding(.vertical, 6)
         .padding(.horizontal, 8)

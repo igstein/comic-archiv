@@ -11,12 +11,11 @@ struct Comic_ArchivApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Comic.self,
-            ComicListe.self,
+            ComicList.self,
             ReadingOrderEntry.self,
             PlaceholderComic.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
@@ -32,19 +31,15 @@ struct Comic_ArchivApp: App {
         .modelContainer(sharedModelContainer)
         .commands {
             CommandGroup(after: .newItem) {
-                Button("Comic hinzufügen") {
-                    // Wird über Keyboard Shortcut in der View behandelt
-                }
-                .keyboardShortcut("n", modifiers: .command)
-                .disabled(true)  // Wird nur für Menü-Anzeige verwendet
-                
+                Button("Add Comic") { }
+                    .keyboardShortcut("n", modifiers: .command)
+                    .disabled(true)
+
                 Divider()
-                
-                Button("Neue Liste") {
-                    // Wird über Keyboard Shortcut in der View behandelt
-                }
-                .keyboardShortcut("l", modifiers: [.command, .shift])
-                .disabled(true)  // Wird nur für Menü-Anzeige verwendet
+
+                Button("New List") { }
+                    .keyboardShortcut("l", modifiers: [.command, .shift])
+                    .disabled(true)
             }
         }
     }

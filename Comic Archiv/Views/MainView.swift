@@ -1,5 +1,5 @@
 //
-//  MainView.swift (Alternative mit Segmented Control)
+//  MainView.swift
 //  Comic Archiv
 //
 
@@ -9,212 +9,186 @@ import SwiftData
 struct MainView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var comics: [Comic]
-    @Query private var listen: [ComicListe]
-    
-    @State private var selectedListe: ComicListe?
+    @Query private var lists: [ComicList]
+
+    @State private var selectedList: ComicList?
     @State private var showingAddComic = false
     @State private var viewModel: ComicViewModel?
     @State private var sortOrder: SortOrder = .title
     @State private var searchText = ""
-    @State private var gelesenFilter: GelesenFilter = .alle
-    
+    @State private var readFilter: ReadFilter = .all
+    @State private var selectedComicFromSuggestion: Comic?
+
     enum SortOrder: String, CaseIterable {
-        case title = "Titel"
-        case author = "Autor"
-        case publisher = "Verlag"
-        case date = "Datum"
-        
+        case title     = "Title"
+        case author    = "Author"
+        case publisher = "Publisher"
+        case date      = "Date"
+
         var icon: String {
             switch self {
-            case .title: return "textformat"
-            case .author: return "person"
+            case .title:     return "textformat"
+            case .author:    return "person"
             case .publisher: return "building.2"
-            case .date: return "calendar"
+            case .date:      return "calendar"
             }
         }
     }
-    
-    // Gelesen-Status Filter Enum
-    enum GelesenFilter: String, CaseIterable, Identifiable {
-        case alle = "Alle"
-        case gelesen = "Gelesen"
-        case ungelesen = "Ungelesen"
-        
+
+    enum ReadFilter: String, CaseIterable, Identifiable {
+        case all       = "All"
+        case unread    = "Unread"
+        case reading   = "Reading"
+        case paused    = "Paused"
+        case finished  = "Finished"
+        case abandoned = "Abandoned"
+
         var id: String { rawValue }
     }
-    
+
     var body: some View {
         NavigationSplitView {
-            // Sidebar
             SidebarView(
-                listen: listen,
+                lists: lists,
                 comics: comics,
-                selectedListe: $selectedListe,
+                selectedList: $selectedList,
                 viewModel: viewModel
             )
             .navigationSplitViewColumnWidth(min: 200, ideal: 250, max: 300)
         } detail: {
-            // Hauptbereich
-            if let liste = selectedListe {
-                if liste.istReadingOrder {
-                    // Reading Order View
-                    ReadingOrderContentView(
-                        liste: liste,
-                        viewModel: viewModel
-                    )
-                } else if liste.istWishlist {
-                    // Wishlist View
-                    WishlistContentView(
-                        liste: liste,
-                        viewModel: viewModel
-                    )
+            if let list = selectedList {
+                if list.isReadingOrder {
+                    ReadingOrderContentView(list: list, viewModel: viewModel)
+                } else if list.isWishlist {
+                    WishlistContentView(list: list, viewModel: viewModel)
                 } else {
-                    // Normale Grid View
                     VStack(spacing: 0) {
-                        // Header mit Info
-                        VStack(spacing: 0) {
-                            HStack(alignment: .center, spacing: 12) {
-                                // ... bestehender header code ...
+                        // Suggestions panel — shown only in My Collection
+                        if list.isMainCollection {
+                            let suggestions = viewModel?.suggestedComics(
+                                allComics: comics, allLists: lists
+                            ) ?? []
+                            if !suggestions.isEmpty {
+                                WhatToReadNextView(comics: suggestions) { comic in
+                                    selectedComicFromSuggestion = comic
+                                }
+                                Divider()
                             }
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 16)
-                            .background(Color(.windowBackgroundColor))
                         }
-                        
-                        Divider()
-                        
-                        // Comic Grid
+
                         ComicGridView(
                             comics: sortedComics,
                             onAddComic: { showingAddComic = true },
                             viewModel: viewModel
                         )
-                        .searchable(
-                            text: $searchText,
-                            placement: .toolbar,
-                            prompt: "Comics durchsuchen..."
-                        )
+                        .searchable(text: $searchText, placement: .toolbar, prompt: "Search comics...")
                     }
                 }
             }
         }
         .toolbar {
             ToolbarItemGroup(placement: .automatic) {
-                // Sortierung
                 Menu {
-                    Picker("Sortierung", selection: $sortOrder) {
+                    Picker("Sort", selection: $sortOrder) {
                         ForEach(SortOrder.allCases, id: \.self) { order in
-                            Label(order.rawValue, systemImage: order.icon)
-                                .tag(order)
+                            Label(order.rawValue, systemImage: order.icon).tag(order)
                         }
                     }
                 } label: {
-                    Label("Sortierung", systemImage: "arrow.up.arrow.down")
+                    Label("Sort", systemImage: "arrow.up.arrow.down")
                 }
-                .help("Sortierung ändern")
+                .help("Change sort order")
+
+                Menu {
+                    Picker("Filter", selection: $readFilter) {
+                        ForEach(ReadFilter.allCases) { filter in
+                            Text(filter.rawValue).tag(filter)
+                        }
+                    }
+                } label: {
+                    Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
+                }
+                .help("Filter by read status")
             }
         }
         .onAppear {
-            // ViewModel initialisieren
             if viewModel == nil {
                 viewModel = ComicViewModel(modelContext: modelContext)
             }
-            
-            // System-Listen sicherstellen (Meine Sammlung + Wishlist)
             ensureSystemListsExist()
-            
-            // Erste Liste auswählen
-            if selectedListe == nil, let erste = listen.first {
-                selectedListe = erste
+            if selectedList == nil, let first = lists.first {
+                selectedList = first
             }
         }
         .sheet(isPresented: $showingAddComic) {
             if let viewModel = viewModel {
-                AddComicSheet(
-                    viewModel: viewModel,
-                    targetListe: selectedListe
-                )
+                AddComicSheet(viewModel: viewModel, targetList: selectedList)
             }
         }
-        .navigationTitle(selectedListe?.name ?? "Comic Archiv")
-    }
-    
-    // Gefilterte Comics basierend auf ausgewählter Liste
-    private var filteredComics: [Comic] {
-        guard let selectedListe = selectedListe else {
-            return comics
+        .sheet(item: $selectedComicFromSuggestion) { comic in
+            if let viewModel = viewModel {
+                ComicDetailView(comic: comic, viewModel: viewModel) {
+                    selectedComicFromSuggestion = nil
+                }
+            }
         }
-        return selectedListe.comics
+        .navigationTitle(selectedList?.name ?? "Comic Archiv")
     }
 
-    // Gefilterte Comics mit Suche UND Gelesen-Status
+    private var filteredComics: [Comic] {
+        guard let selectedList else { return comics }
+        return selectedList.comics
+    }
+
     private var searchFilteredComics: [Comic] {
         var result = filteredComics
-        
-        // 1. Suche anwenden
+
         if !searchText.isEmpty {
             result = result.filter { comic in
-                comic.titel.localizedCaseInsensitiveContains(searchText) ||
-                comic.autor.localizedCaseInsensitiveContains(searchText) ||
-                comic.verlag.localizedCaseInsensitiveContains(searchText) ||
-                comic.nummer.localizedCaseInsensitiveContains(searchText)
+                comic.title.localizedCaseInsensitiveContains(searchText) ||
+                comic.author.localizedCaseInsensitiveContains(searchText) ||
+                comic.publisher.localizedCaseInsensitiveContains(searchText) ||
+                comic.issueNumber.localizedCaseInsensitiveContains(searchText)
             }
         }
-        
-        // 2. Gelesen-Status Filter anwenden
-        switch gelesenFilter {
-        case .alle:
-            break // Keine weitere Filterung
-        case .gelesen:
-            result = result.filter { $0.gelesen }
-        case .ungelesen:
-            result = result.filter { !$0.gelesen }
+
+        switch readFilter {
+        case .all:       break
+        case .unread:    result = result.filter { $0.readStatus == .unread }
+        case .reading:   result = result.filter { $0.readStatus == .reading }
+        case .paused:    result = result.filter { $0.readStatus == .paused }
+        case .finished:  result = result.filter { $0.readStatus == .finished }
+        case .abandoned: result = result.filter { $0.readStatus == .abandoned }
         }
-        
+
         return result
     }
-    
-    // Sortierte Comics
+
     private var sortedComics: [Comic] {
-        let filtered = searchFilteredComics
-        
         switch sortOrder {
-        case .title:
-            return filtered.sorted { $0.titel.localizedCompare($1.titel) == .orderedAscending }
-        case .author:
-            return filtered.sorted { $0.autor.localizedCompare($1.autor) == .orderedAscending }
-        case .publisher:
-            return filtered.sorted { $0.verlag.localizedCompare($1.verlag) == .orderedAscending }
-        case .date:
-            return filtered.sorted { $0.erscheinungsdatum > $1.erscheinungsdatum }
+        case .title:     return searchFilteredComics.sorted { $0.title.localizedCompare($1.title) == .orderedAscending }
+        case .author:    return searchFilteredComics.sorted { $0.author.localizedCompare($1.author) == .orderedAscending }
+        case .publisher: return searchFilteredComics.sorted { $0.publisher.localizedCompare($1.publisher) == .orderedAscending }
+        case .date:      return searchFilteredComics.sorted { $0.releaseDate > $1.releaseDate }
         }
     }
-    
-    // System-Listen sicherstellen
+
     private func ensureSystemListsExist() {
-        // Meine Sammlung erstellen falls nicht vorhanden
-        let hauptlisteDescriptor = FetchDescriptor<ComicListe>(
-            predicate: #Predicate { $0.istHauptliste }
-        )
-        let existingHauptliste = try? modelContext.fetch(hauptlisteDescriptor).first
-        
-        if existingHauptliste == nil {
-            let hauptliste = ComicListe(
-                name: "Meine Sammlung",
+        let descriptor = FetchDescriptor<ComicList>(predicate: #Predicate { $0.isMainCollection })
+        if (try? modelContext.fetch(descriptor).first) == nil {
+            let mainCollection = ComicList(
+                name: "My Collection",
                 icon: "books.vertical.fill",
-                istHauptliste: true
+                isMainCollection: true
             )
-            modelContext.insert(hauptliste)
+            modelContext.insert(mainCollection)
         }
-        
-        // Wishlist erstellen falls nicht vorhanden
         viewModel?.ensureWishlistExists()
-        
         try? modelContext.save()
     }
 }
 
 #Preview {
     MainView()
-        .modelContainer(for: [Comic.self, ComicListe.self], inMemory: true)
+        .modelContainer(for: [Comic.self, ComicList.self], inMemory: true)
 }

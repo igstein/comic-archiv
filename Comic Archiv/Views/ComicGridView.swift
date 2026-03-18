@@ -9,13 +9,11 @@ struct ComicGridView: View {
     let comics: [Comic]
     let onAddComic: () -> Void
     let viewModel: ComicViewModel?
-    
+
     @State private var selectedComic: Comic?
-    
-    private let columns = [
-        GridItem(.adaptive(minimum: 160, maximum: 220), spacing: 24)
-    ]
-    
+
+    private let columns = [GridItem(.adaptive(minimum: 160, maximum: 220), spacing: 24)]
+
     var body: some View {
         Group {
             if comics.isEmpty {
@@ -24,10 +22,8 @@ struct ComicGridView: View {
                 ScrollView {
                     LazyVGrid(columns: columns, spacing: 20) {
                         ForEach(comics) { comic in
-                            ComicCardView(comic: comic) {
-                                selectedComic = comic
-                            }
-                            .transition(.scale.combined(with: .opacity))
+                            ComicCardView(comic: comic) { selectedComic = comic }
+                                .transition(.scale.combined(with: .opacity))
                         }
                     }
                     .padding(20)
@@ -37,49 +33,40 @@ struct ComicGridView: View {
         }
         .toolbar {
             ToolbarItem(placement: .automatic) {
-                Button {
-                    onAddComic()
-                } label: {
-                    Label("Comic hinzufügen", systemImage: "plus")
+                Button { onAddComic() } label: {
+                    Label("Add Comic", systemImage: "plus")
                 }
                 .keyboardShortcut("n", modifiers: .command)
-                .help("Neuen Comic hinzufügen (⌘N)")
+                .help("Add new comic (⌘N)")
             }
         }
         .sheet(item: $selectedComic) { comic in
-            if let viewModel = viewModel {
-                ComicDetailView(
-                    comic: comic,
-                    viewModel: viewModel,
-                    onDelete: {
-                        selectedComic = nil
-                    }
-                )
+            if let viewModel {
+                ComicDetailView(comic: comic, viewModel: viewModel) {
+                    selectedComic = nil
+                }
             }
         }
     }
-    
+
     private var emptyState: some View {
         VStack(spacing: 16) {
             Image(systemName: "books.vertical")
                 .font(.system(size: 64))
                 .foregroundStyle(.secondary)
-            
-            Text("Keine Comics")
+
+            Text("No Comics")
                 .font(.title2)
                 .fontWeight(.semibold)
-            
-            Text("Füge deinen ersten Comic hinzu oder ziehe Comics aus anderen Listen hierher")
+
+            Text("Add your first comic or drag comics from other lists here.")
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
-            
-            Button {
-                onAddComic()
-            } label: {
-                Label("Comic hinzufügen", systemImage: "plus.circle.fill")
-                    .font(.headline)
+
+            Button { onAddComic() } label: {
+                Label("Add Comic", systemImage: "plus.circle.fill").font(.headline)
             }
             .buttonStyle(.borderedProminent)
             .padding(.top, 8)

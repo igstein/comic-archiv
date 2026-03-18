@@ -5,173 +5,122 @@
 
 import SwiftUI
 import AppKit
-import UniformTypeIdentifiers
 import SwiftData
+import UniformTypeIdentifiers
 
 struct AddComicSheetForPlaceholder: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    
+
     let entry: ReadingOrderEntry
     let viewModel: ComicViewModel
-    
-    @State private var titel: String
-    @State private var autor = ""
-    @State private var zeichner = ""
-    @State private var verlag = ""
-    @State private var nummer = ""
-    @State private var erscheinungsdatum = Date()
-    @State private var gelesen = false
+
+    @State private var title: String
+    @State private var author = ""
+    @State private var artist = ""
+    @State private var publisher = ""
+    @State private var issueNumber = ""
+    @State private var releaseDate: Date = {
+        var c = DateComponents(); c.year = 1900; c.month = 1; c.day = 1
+        return Calendar.current.date(from: c) ?? Date()
+    }()
+    @State private var readStatus: ReadStatus = .unread
+    @State private var priority: Priority = .medium
+    @State private var genre = ""
     @State private var coverImage: NSImage?
-    
+
     init(entry: ReadingOrderEntry, viewModel: ComicViewModel) {
         self.entry = entry
         self.viewModel = viewModel
-        // Titel vom Platzhalter vorausfüllen
-        self._titel = State(initialValue: entry.placeholderName ?? "")
+        self._title = State(initialValue: entry.placeholderName ?? "")
     }
-    
+
     var body: some View {
         NavigationStack {
             Form {
-                Section("Comic-Details") {
-                    TextField("Titel", text: $titel)
-                    TextField("Autor", text: $autor)
-                    TextField("Zeichner", text: $zeichner)
-                    TextField("Verlag", text: $verlag)
-                    TextField("Nummer/Band", text: $nummer)
+                Section("Comic Details") {
+                    TextField("Title",          text: $title)
+                    TextField("Author",         text: $author)
+                    TextField("Artist",         text: $artist)
+                    TextField("Publisher",      text: $publisher)
+                    TextField("Issue / Volume", text: $issueNumber)
+                    TextField("Genre",          text: $genre)
                 }
-                
-                Section("Weitere Informationen") {
-                    DatePicker("Erscheinungsdatum",
-                             selection: $erscheinungsdatum,
-                             displayedComponents: .date)
-                    
-                    Toggle("Gelesen", isOn: $gelesen)
+                Section("Status") {
+                    Picker("Read Status", selection: $readStatus) {
+                        ForEach(ReadStatus.allCases, id: \.self) { s in Label(s.label, systemImage: s.icon).tag(s) }
+                    }
+                    Picker("Priority", selection: $priority) {
+                        ForEach(Priority.allCases, id: \.self) { p in Label(p.label, systemImage: p.icon).tag(p) }
+                    }
+                    DatePicker("Release Date", selection: $releaseDate, displayedComponents: .date)
                 }
-                
-                Section("Cover-Bild") {
+                Section("Cover Image") {
                     VStack(spacing: 12) {
-                        // Cover anzeigen
                         if let image = coverImage {
-                            Image(nsImage: image)
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(maxHeight: 200)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                            Image(nsImage: image).resizable().aspectRatio(contentMode: .fit)
+                                .frame(maxHeight: 200).clipShape(RoundedRectangle(cornerRadius: 8))
                         } else {
                             ZStack {
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.gray.opacity(0.2))
-                                    .frame(height: 200)
-                                
+                                RoundedRectangle(cornerRadius: 8).fill(Color.gray.opacity(0.2)).frame(height: 200)
                                 VStack {
-                                    Image(systemName: "photo")
-                                        .font(.system(size: 40))
-                                        .foregroundStyle(.gray)
-                                    
-                                    Text("Optional")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
+                                    Image(systemName: "photo").font(.system(size: 40)).foregroundStyle(.gray)
+                                    Text("Optional").font(.caption).foregroundStyle(.secondary)
                                 }
                             }
                         }
-                        
-                        // Buttons
                         HStack {
-                            Button {
-                                selectImage()
-                            } label: {
-                                Label(coverImage == nil ? "Cover hinzufügen" : "Cover ändern",
-                                      systemImage: "photo")
+                            Button { selectImage() } label: {
+                                Label(coverImage == nil ? "Add Cover" : "Change Cover", systemImage: "photo")
                             }
-                            
                             if coverImage != nil {
-                                Button(role: .destructive) {
-                                    coverImage = nil
-                                } label: {
-                                    Label("Entfernen", systemImage: "trash")
-                                }
+                                Button(role: .destructive) { coverImage = nil } label: { Label("Remove", systemImage: "trash") }
                             }
                         }
                     }
                 }
             }
             .formStyle(.grouped)
-            .navigationTitle("Comic zur Sammlung hinzufügen")
+            .navigationTitle("Add to Collection")
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Abbrechen") {
-                        dismiss()
-                    }
-                }
-                
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Hinzufügen") {
-                        addComicAndReplacePlaceholder()
-                    }
-                    .disabled(titel.isEmpty)
+                    Button("Add") { addComicAndReplacePlaceholder() }.disabled(title.isEmpty)
                 }
             }
         }
         .frame(minWidth: 500, minHeight: 500)
     }
-    
+
     private func selectImage() {
         let panel = NSOpenPanel()
-        panel.allowsMultipleSelection = false
-        panel.canChooseDirectories = false
-        panel.canChooseFiles = true
-        panel.allowedContentTypes = [.png, .jpeg, .heic, .gif, .bmp, .tiff]
-        panel.message = "Wähle ein Cover-Bild"
-        
+        panel.allowsMultipleSelection = false; panel.canChooseDirectories = false
+        panel.canChooseFiles = true; panel.allowedContentTypes = [.png, .jpeg, .heic, .gif, .bmp, .tiff]
+        panel.message = "Choose a cover image"
         panel.begin { response in
-            guard response == .OK,
-                  let url = panel.url,
-                  let image = NSImage(contentsOf: url) else {
-                return
-            }
-            
+            guard response == .OK, let url = panel.url, let image = NSImage(contentsOf: url) else { return }
             coverImage = image
         }
     }
-    
+
     private func addComicAndReplacePlaceholder() {
-        // 1. Comic erstellen
         let newComic = Comic(
-            titel: titel,
-            autor: autor,
-            zeichner: zeichner,
-            verlag: verlag,
-            erscheinungsdatum: erscheinungsdatum,
-            nummer: nummer,
-            gelesen: gelesen
+            title: title, author: author, artist: artist, publisher: publisher,
+            releaseDate: releaseDate, issueNumber: issueNumber,
+            readStatus: readStatus, priority: priority, genre: genre
         )
-        
-        // 2. Cover-Bild speichern falls vorhanden
-        if let image = coverImage {
-            viewModel.setCoverImage(image, for: newComic)
-        }
-        
-        // 3. Comic zur "Meine Sammlung" hinzufügen
+        if let image = coverImage { viewModel.setCoverImage(image, for: newComic) }
         modelContext.insert(newComic)
-        
-        // Hauptliste finden und Comic hinzufügen
-        let descriptor = FetchDescriptor<ComicListe>(
-            predicate: #Predicate { $0.istHauptliste }
-        )
-        if let hauptliste = try? modelContext.fetch(descriptor).first {
-            hauptliste.comics.append(newComic)
+
+        let descriptor = FetchDescriptor<ComicList>(predicate: #Predicate { $0.isMainCollection })
+        if let mainCollection = try? modelContext.fetch(descriptor).first {
+            mainCollection.comics.append(newComic)
         }
-        
-        // 4. Platzhalter durch Comic ersetzen
+
         entry.comic = newComic
         entry.placeholderName = nil
-        
         try? modelContext.save()
-        
         viewModel.convertPlaceholdersToComic(newComic)
-        
         dismiss()
     }
 }

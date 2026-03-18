@@ -1,50 +1,40 @@
 //
-//  AddListeSheet.swift
+//  AddListSheet.swift
 //  Comic Archiv
 //
 
 import SwiftUI
 
-struct AddListeSheet: View {
+struct AddListSheet: View {
     @Environment(\.dismiss) private var dismiss
-    
+
     let viewModel: ComicViewModel
-    
+
     @State private var name = ""
     @State private var selectedIcon = "star.fill"
-    
-    // Auswahl an Icons (ohne list.bullet - nur für Reading Orders)
+
     private let availableIcons = [
-        "star.fill",
-        "heart.fill",
-        "bookmark.fill",
-        "folder.fill",
-        "tray.fill",
-        "flag.fill",
-        "tag.fill",
-        "books.vertical.fill",
-        "book.closed.fill",
-        "checkmark.circle.fill"
+        "star.fill", "heart.fill", "bookmark.fill", "folder.fill",
+        "tray.fill", "flag.fill", "tag.fill", "books.vertical.fill",
+        "book.closed.fill", "checkmark.circle.fill"
     ]
-    
+
     var body: some View {
         NavigationStack {
             Form {
-                Section("Listen-Details") {
+                Section("List Details") {
                     TextField("Name", text: $name)
-                    
                     Picker("Icon", selection: $selectedIcon) {
                         ForEach(availableIcons, id: \.self) { icon in
-                            Image(systemName: icon)
-                                .tag(icon)
+                            Image(systemName: icon).tag(icon)
                         }
                     }
                     .pickerStyle(.menu)
                 }
-                
-                Section("Vorschau") {
+
+                Section("Preview") {
                     Label {
-                        Text(name.isEmpty ? "Meine Liste" : name)
+                        Text(name.isEmpty ? "My List" : name)
                     } icon: {
                         Image(systemName: selectedIcon)
                     }
@@ -52,32 +42,20 @@ struct AddListeSheet: View {
                 }
             }
             .formStyle(.grouped)
-            .navigationTitle("Neue Liste")
+            .navigationTitle("New List")
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Abbrechen") {
-                        dismiss()
-                    }
-                }
-                
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Erstellen") {
-                        createListe()
-                    }
-                    .disabled(name.isEmpty)
+                    Button("Create") { createList() }.disabled(name.isEmpty)
                 }
             }
         }
         .frame(minWidth: 400, minHeight: 300)
     }
-    
-    private func createListe() {
-        let newListe = ComicListe(
-            name: name,
-            icon: selectedIcon
-        )
-        
-        viewModel.addListe(newListe)
+
+    private func createList() {
+        let newList = ComicList(name: name, icon: selectedIcon)
+        viewModel.addList(newList)
         dismiss()
     }
 }

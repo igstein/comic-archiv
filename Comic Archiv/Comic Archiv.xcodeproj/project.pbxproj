@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		A8A57E5F2F6ACCCC001981F1 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = A8A57E5E2F6ACCCC001981F1 /* Info.plist */; };
+		A8A57E612F6AFE28001981F1 /* WhatToReadNextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A57E602F6AFE28001981F1 /* WhatToReadNextView.swift */; };
 		A8C4EF8E2F28C63300DA6EB2 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8C4EF8D2F28C63300DA6EB2 /* ContentView.swift */; };
 		A8C4EF902F28C63300DA6EB2 /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8C4EF8F2F28C63300DA6EB2 /* Item.swift */; };
 		A8C4EFBB2F29192700DA6EB2 /* Comic.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8C4EFBA2F29192700DA6EB2 /* Comic.swift */; };
@@ -53,6 +54,7 @@
 
 /* Begin PBXFileReference section */
 		A8A57E5E2F6ACCCC001981F1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A8A57E602F6AFE28001981F1 /* WhatToReadNextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WhatToReadNextView.swift"; sourceTree = "<group>"; };
 		A8C4EF882F28C63300DA6EB2 /* Comic Archiv.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Comic Archiv.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A8C4EF8D2F28C63300DA6EB2 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A8C4EF8F2F28C63300DA6EB2 /* Item.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Item.swift; sourceTree = "<group>"; };
@@ -182,6 +184,7 @@
 				A8F370632F2B7EA600831043 /* EditReadingOrderEntrySheet.swift */,
 				A8F370652F2B8EF700831043 /* AddComicSheetForPlaceholder.swift */,
 				A8F370692F2CF6B100831043 /* WishlistContentView.swift */,
+				A8A57E602F6AFE28001981F1 /* WhatToReadNextView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -369,6 +372,7 @@
 				A8C4EFBB2F29192700DA6EB2 /* Comic.swift in Sources */,
 				A8F370592F2A7D9900831043 /* TestReadingOrder.swift in Sources */,
 				A8C4EFCB2F291EC800DA6EB2 /* AddComicSheet.swift in Sources */,
+				A8A57E612F6AFE28001981F1 /* WhatToReadNextView.swift in Sources */,
 				A8C4EFD52F2A715200DA6EB2 /* ReadingOrderEntry.swift in Sources */,
 				A8C4EFBF2F291A7600DA6EB2 /* TestData.swift in Sources */,
 				A8C4EF902F28C63300DA6EB2 /* Item.swift in Sources */,

@@ -9,81 +9,71 @@ import UniformTypeIdentifiers
 struct ComicCardView: View {
     let comic: Comic
     let onTap: () -> Void
-    
+
     @State private var isDragging = false
     @State private var isHovering = false
     @State private var coverImage: NSImage?
-    
+
     var body: some View {
-        Button {
-            onTap()
-        } label: {
+        Button { onTap() } label: {
             VStack(alignment: .leading, spacing: 8) {
-                // Cover - echtes Bild oder Placeholder
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.gray.opacity(0.2))
-                        .aspectRatio(2/3, contentMode: .fit)
-                    
-                    if let image = coverImage {
-                        Image(nsImage: image)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(maxWidth: .infinity)
+                ZStack(alignment: .topLeading) {
+                    // Cover
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.gray.opacity(0.2))
                             .aspectRatio(2/3, contentMode: .fit)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                    } else {
-                        Image(systemName: "book.closed")
-                            .font(.system(size: 40))
-                            .foregroundStyle(.gray)
-                    }
-                    
-                    // Gelesen-Badge
-                    if comic.gelesen {
-                        VStack {
-                            HStack {
-                                Spacer()
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.title3)
-                                    .foregroundStyle(.white)
-                                    .background(
-                                        Circle()
-                                            .fill(.green)
-                                            .padding(-4)
-                                    )
-                                    .padding(8)
-                            }
-                            Spacer()
+
+                        if let image = coverImage {
+                            Image(nsImage: image)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(maxWidth: .infinity)
+                                .aspectRatio(2/3, contentMode: .fit)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                        } else {
+                            Image(systemName: "book.closed")
+                                .font(.system(size: 40))
+                                .foregroundStyle(.gray)
                         }
                     }
+
+                    // Priority badge (top-left)
+                    priorityBadge.padding(6)
+
+                    // Read status badge (top-right)
+                    VStack {
+                        HStack {
+                            Spacer()
+                            statusBadge.padding(6)
+                        }
+                        Spacer()
+                    }
                 }
-                
-                // Comic Info
+
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(comic.titel)
+                    Text(comic.title)
                         .font(.headline)
                         .lineLimit(2)
                         .foregroundStyle(.primary)
-                    
-                    if !comic.autor.isEmpty {
-                        Text(comic.autor)
+
+                    if !comic.author.isEmpty {
+                        Text(comic.author)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
-                    
+
                     HStack {
-                        if !comic.verlag.isEmpty {
-                            Text(comic.verlag)
+                        if !comic.publisher.isEmpty {
+                            Text(comic.publisher)
                                 .font(.caption)
                                 .foregroundStyle(.tertiary)
                                 .lineLimit(1)
                         }
-                        
                         Spacer()
-                        
-                        if !comic.nummer.isEmpty {
-                            Text("#\(comic.nummer)")
+                        if !comic.issueNumber.isEmpty {
+                            Text("#\(comic.issueNumber)")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .fontWeight(.medium)
@@ -105,48 +95,78 @@ struct ComicCardView: View {
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isDragging)
         }
         .buttonStyle(.plain)
-        .onHover { hovering in
-            isHovering = hovering
-        }
-        .onAppear {
-            loadCoverImage()
-        }
-        .onChange(of: comic.coverBildName) { oldValue, newValue in
-            loadCoverImage()
-        }
+        .onHover { isHovering = $0 }
+        .onAppear { loadCoverImage() }
+        .onChange(of: comic.coverImageName) { _, _ in loadCoverImage() }
         .onDrag {
             isDragging = true
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                isDragging = false
-            }
-            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { isDragging = false }
             return NSItemProvider(object: comic.id.uuidString as NSString)
         }
-        
         .contextMenu {
-            Button {
-                onTap()
-            } label: {
-                Label("Bearbeiten", systemImage: "pencil")
-            }
-            
+            Button { onTap() } label: { Label("Edit", systemImage: "pencil") }
             Divider()
-            
-            Button {
-                comic.gelesen.toggle()
-            } label: {
-                if comic.gelesen {
-                    Label("Als ungelesen markieren", systemImage: "book")
-                } else {
-                    Label("Als gelesen markieren", systemImage: "checkmark.circle")
-                }
+            Menu("Set Status") {
+                Button { setStatus(.unread) }    label: { Label("Unread",    systemImage: "book.closed") }
+                Button { setStatus(.reading) }   label: { Label("Reading",   systemImage: "book") }
+                Button { setStatus(.paused) }    label: { Label("Paused",    systemImage: "pause.circle") }
+                Button { setStatus(.finished) }  label: { Label("Finished",  systemImage: "checkmark.circle") }
+                Button { setStatus(.abandoned) } label: { Label("Abandoned", systemImage: "xmark.circle") }
             }
         }
     }
-    
+
+    @ViewBuilder
+    private var priorityBadge: some View {
+        switch comic.priority {
+        case .mustRead:
+            Image(systemName: "star.fill")
+                .font(.caption2).foregroundStyle(.white).padding(4)
+                .background(Circle().fill(Color.yellow))
+        case .high:
+            Image(systemName: "circle.fill")
+                .font(.caption2).foregroundStyle(.white).padding(4)
+                .background(Circle().fill(Color.orange))
+        case .medium, .low:
+            EmptyView()
+        }
+    }
+
+    @ViewBuilder
+    private var statusBadge: some View {
+        switch comic.readStatus {
+        case .finished:
+            Image(systemName: "checkmark.circle.fill")
+                .font(.title3).foregroundStyle(.white)
+                .background(Circle().fill(.green).padding(-4))
+                .padding(4)
+        case .reading:
+            Image(systemName: "book.fill")
+                .font(.title3).foregroundStyle(.white)
+                .background(Circle().fill(.blue).padding(-4))
+                .padding(4)
+        case .paused:
+            Image(systemName: "pause.circle.fill")
+                .font(.title3).foregroundStyle(.white)
+                .background(Circle().fill(.orange).padding(-4))
+                .padding(4)
+        case .abandoned:
+            Image(systemName: "xmark.circle.fill")
+                .font(.title3).foregroundStyle(.white)
+                .background(Circle().fill(.red).padding(-4))
+                .padding(4)
+        case .unread:
+            EmptyView()
+        }
+    }
+
+    private func setStatus(_ status: ReadStatus) {
+        if status == .finished { comic.lastReadAt = Date() }
+        comic.readStatus = status
+    }
+
     private func loadCoverImage() {
-        if let fileName = comic.coverBildName {
+        if let fileName = comic.coverImageName {
             coverImage = ImageManager.shared.loadImage(named: fileName)
         } else {
             coverImage = nil
