@@ -17,11 +17,25 @@ struct ComicSearchSection: View {
     @State private var isSearching    = false
     @State private var searchTask:    Task<Void, Never>?
     @State private var showingCVSetup = false
+    @State private var cvMode:        CVSearchMode = .issues
 
     private var cvConfigured: Bool { !comicVineApiKey.isEmpty }
 
     var body: some View {
         Section {
+            // Issues / Trades toggle (only shown when CV is configured)
+            if cvConfigured {
+                Picker("Search Mode", selection: $cvMode) {
+                    Text("Issues").tag(CVSearchMode.issues)
+                    Text("Trades").tag(CVSearchMode.trades)
+                }
+                .pickerStyle(.segmented)
+                .onChange(of: cvMode) { _, _ in
+                    results = []
+                    scheduleSearch(query)
+                }
+            }
+
             // Search bar
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
@@ -81,7 +95,7 @@ struct ComicSearchSection: View {
             try? await Task.sleep(for: .milliseconds(500))
             guard !Task.isCancelled else { return }
             await MainActor.run { isSearching = true }
-            let found = await ComicSearchService.shared.search(query: trimmed)
+            let found = await ComicSearchService.shared.search(query: trimmed, cvMode: cvMode)
             guard !Task.isCancelled else { return }
             await MainActor.run {
                 results     = found

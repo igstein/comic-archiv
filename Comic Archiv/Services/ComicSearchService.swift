@@ -22,22 +22,30 @@ struct ComicSearchResult: Identifiable, Sendable {
 
     enum SearchSource: Sendable {
         case comicVine
+        case comicVineTrade
         case aniList
 
         var label: String {
             switch self {
-            case .comicVine: return "Comic Vine"
-            case .aniList:   return "AniList"
+            case .comicVine:      return "Issue"
+            case .comicVineTrade: return "Trade"
+            case .aniList:        return "AniList"
             }
         }
 
         var color: Color {
             switch self {
-            case .comicVine: return .blue
-            case .aniList:   return .purple
+            case .comicVine:      return .blue
+            case .comicVineTrade: return .indigo
+            case .aniList:        return .purple
             }
         }
     }
+}
+
+enum CVSearchMode: Sendable {
+    case issues
+    case trades
 }
 
 // MARK: - Service
@@ -49,10 +57,10 @@ actor ComicSearchService {
     private let session = URLSession.shared
 
     /// Search Comic Vine and AniList in parallel and return combined results.
-    func search(query: String) async -> [ComicSearchResult] {
+    func search(query: String, cvMode: CVSearchMode = .issues) async -> [ComicSearchResult] {
         let trimmed = query.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return [] }
-        async let cv    = searchComicVine(query: trimmed)
+        async let cv    = cvMode == .issues ? searchComicVine(query: trimmed) : searchComicVineTrades(query: trimmed)
         async let anime = searchAniList(query: trimmed)
         let (c, a) = await (cv, anime)
         return c + a
@@ -114,7 +122,7 @@ actor ComicSearchService {
 
     /// Fetch full issue details (credits, publisher) for a Comic Vine result.
     func enrichComicVineResult(_ result: ComicSearchResult) async -> ComicSearchResult {
-        guard case .comicVine = result.source,
+        guard case .comicVine = result.source,  // skip trades
               let idStr = result.id.split(separator: "-").last,
               let url = comicVineURL("/issue/4000-\(idStr)/", params: [
                   "field_list": "id,name,issue_number,volume,cover_date,image,person_credits"
@@ -152,6 +160,46 @@ actor ComicSearchService {
         } catch {
             return result
         }
+    }
+
+    // MARK: - Comic Vine Trades (volume-level search)
+
+    private func searchComicVineTrades(query: String) async -> [ComicSearchResult] {
+        guard let url = comicVineURL("/search/", params: [
+            "query":      query,
+            "resources":  "volume",
+            "limit":      "8",
+            "field_list": "id,name,start_year,publisher,image,count_of_issues"
+        ]) else { return [] }
+
+        do {
+            let (data, _) = try await session.data(for: comicVineRequest(url: url))
+            let response  = try JSONDecoder().decode(CVVolumeSearchResponse.self, from: data)
+            guard response.statusCode == 1 else { return [] }
+            return response.results.map(cvVolumeToResult)
+        } catch {
+            return []
+        }
+    }
+
+    private func cvVolumeToResult(_ volume: CVVolumeResult) -> ComicSearchResult {
+        var date: Date? = nil
+        if let year = volume.startYear, let y = Int(year) {
+            var c = DateComponents(); c.year = y; c.month = 1; c.day = 1
+            date = Calendar.current.date(from: c)
+        }
+        return ComicSearchResult(
+            id:          "cv-volume-\(volume.id)",
+            source:      .comicVineTrade,
+            title:       volume.name,
+            issueNumber: "",
+            author:      "",
+            artist:      "",
+            publisher:   volume.publisher?.name ?? "",
+            genre:       "",
+            coverURL:    volume.image?.mediumURL.flatMap(URL.init),
+            releaseDate: date
+        )
     }
 
     // MARK: - AniList
@@ -311,6 +359,29 @@ private nonisolated struct CVIssueDetail: Decodable {
 private nonisolated struct CVPerson: Decodable {
     let name: String
     let role: String
+}
+
+private nonisolated struct CVVolumeSearchResponse: Decodable {
+    let statusCode: Int
+    let results:    [CVVolumeResult]
+    enum CodingKeys: String, CodingKey {
+        case statusCode = "status_code"
+        case results
+    }
+}
+
+private nonisolated struct CVVolumeResult: Decodable {
+    let id:            Int
+    let name:          String
+    let startYear:     String?
+    let publisher:     CVPublisher?
+    let image:         CVImage?
+    let countOfIssues: Int?
+    enum CodingKeys: String, CodingKey {
+        case id, name, publisher, image
+        case startYear     = "start_year"
+        case countOfIssues = "count_of_issues"
+    }
 }
 
 // MARK: - AniList JSON Models
