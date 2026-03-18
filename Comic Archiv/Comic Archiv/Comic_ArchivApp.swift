@@ -8,7 +8,7 @@ import SwiftData
 
 @main
 struct Comic_ArchivApp: App {
-    var sharedModelContainer: ModelContainer = {
+var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Comic.self,
             ComicList.self,

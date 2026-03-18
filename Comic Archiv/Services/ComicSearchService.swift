@@ -21,20 +21,20 @@ struct ComicSearchResult: Identifiable, Sendable {
     let releaseDate: Date?
 
     enum SearchSource: Sendable {
-        case metron
+        case comicVine
         case aniList
 
         var label: String {
             switch self {
-            case .metron:  return "Metron"
-            case .aniList: return "AniList"
+            case .comicVine: return "Comic Vine"
+            case .aniList:   return "AniList"
             }
         }
 
         var color: Color {
             switch self {
-            case .metron:  return .blue
-            case .aniList: return .purple
+            case .comicVine: return .blue
+            case .aniList:   return .purple
             }
         }
     }
@@ -48,93 +48,104 @@ actor ComicSearchService {
 
     private let session = URLSession.shared
 
-    /// Search both Metron and AniList in parallel and return combined results.
+    /// Search Comic Vine and AniList in parallel and return combined results.
     func search(query: String) async -> [ComicSearchResult] {
         let trimmed = query.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return [] }
-        async let metron  = searchMetron(query: trimmed)
-        async let aniList = searchAniList(query: trimmed)
-        let (m, a) = await (metron, aniList)
-        return m + a
+        async let cv    = searchComicVine(query: trimmed)
+        async let anime = searchAniList(query: trimmed)
+        let (c, a) = await (cv, anime)
+        return c + a
     }
 
-    // MARK: - Metron
+    // MARK: - Comic Vine
 
-    private func metronRequest(for url: URL) -> URLRequest? {
-        guard let username = KeychainHelper.metronUsername,
-              let password = KeychainHelper.metronPassword,
-              !username.isEmpty, !password.isEmpty else { return nil }
+    private func comicVineURL(_ path: String, params: [String: String] = [:]) -> URL? {
+        let apiKey = UserDefaults.standard.string(forKey: "comicvine_api_key") ?? ""
+        guard !apiKey.isEmpty else { return nil }
+        var components = URLComponents(string: "https://comicvine.gamespot.com/api\(path)")
+        var items = [
+            URLQueryItem(name: "api_key", value: apiKey),
+            URLQueryItem(name: "format",  value: "json")
+        ]
+        params.forEach { items.append(URLQueryItem(name: $0.key, value: $0.value)) }
+        components?.queryItems = items
+        return components?.url
+    }
+
+    private func comicVineRequest(url: URL) -> URLRequest {
         var req = URLRequest(url: url)
-        let token = "\(username):\(password)".data(using: .utf8)!.base64EncodedString()
-        req.setValue("Basic \(token)", forHTTPHeaderField: "Authorization")
         req.setValue("ComicArchiv/1.0 (personal comic manager)", forHTTPHeaderField: "User-Agent")
         return req
     }
 
-    private func searchMetron(query: String) async -> [ComicSearchResult] {
-        guard
-            let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-            let url = URL(string: "https://metron.cloud/api/issue/?series_name=\(encoded)&page_size=8"),
-            let request = metronRequest(for: url)
-        else { return [] }
+    private func searchComicVine(query: String) async -> [ComicSearchResult] {
+        guard let url = comicVineURL("/search/", params: [
+            "query":      query,
+            "resources":  "issue",
+            "limit":      "8",
+            "field_list": "id,name,issue_number,volume,cover_date,image"
+        ]) else { return [] }
 
         do {
-            let (data, _) = try await session.data(for: request)
-            let response  = try JSONDecoder().decode(MetronListResponse.self, from: data)
-            return response.results.map(metronSummaryToResult)
+            let (data, _) = try await session.data(for: comicVineRequest(url: url))
+            let response  = try JSONDecoder().decode(CVSearchResponse.self, from: data)
+            guard response.statusCode == 1 else { return [] }
+            return response.results.map(cvIssueToResult)
         } catch {
             return []
         }
     }
 
-    private func metronSummaryToResult(_ issue: MetronIssueSummary) -> ComicSearchResult {
+    private func cvIssueToResult(_ issue: CVIssueSummary) -> ComicSearchResult {
         ComicSearchResult(
-            id:          "metron-\(issue.id)",
-            source:      .metron,
-            title:       issue.series.name,
-            issueNumber: issue.number,
+            id:          "cv-\(issue.id)",
+            source:      .comicVine,
+            title:       issue.volume?.name ?? issue.name ?? "Unknown",
+            issueNumber: issue.issueNumber ?? "",
             author:      "",
             artist:      "",
-            publisher:   issue.publisher.name,
-            genre:       issue.genres.first?.name ?? "",
-            coverURL:    issue.image.flatMap(URL.init),
+            publisher:   "",
+            genre:       "",
+            coverURL:    issue.image?.mediumURL.flatMap(URL.init),
             releaseDate: parseDate(issue.coverDate)
         )
     }
 
-    /// Fetch full issue details (credits/creators) for a Metron result.
-    func enrichMetronResult(_ result: ComicSearchResult) async -> ComicSearchResult {
-        guard
-            case .metron = result.source,
-            let idStr  = result.id.split(separator: "-").last,
-            let issueID = Int(idStr),
-            let url    = URL(string: "https://metron.cloud/api/issue/\(issueID)/"),
-            let request = metronRequest(for: url)
+    /// Fetch full issue details (credits, publisher) for a Comic Vine result.
+    func enrichComicVineResult(_ result: ComicSearchResult) async -> ComicSearchResult {
+        guard case .comicVine = result.source,
+              let idStr = result.id.split(separator: "-").last,
+              let url = comicVineURL("/issue/4000-\(idStr)/", params: [
+                  "field_list": "id,name,issue_number,volume,cover_date,image,person_credits"
+              ])
         else { return result }
 
         do {
-            let (data, _) = try await session.data(for: request)
-            let detail    = try JSONDecoder().decode(MetronIssueDetail.self, from: data)
+            let (data, _) = try await session.data(for: comicVineRequest(url: url))
+            let response  = try JSONDecoder().decode(CVDetailResponse.self, from: data)
+            guard response.statusCode == 1 else { return result }
+            let detail = response.results
 
-            let writers = detail.credits
-                .filter { $0.role.contains { $0.name.localizedCaseInsensitiveContains("writer") || $0.name.localizedCaseInsensitiveContains("script") } }
-                .map(\.creator).joined(separator: ", ")
+            let writers = detail.personCredits?
+                .filter { $0.role.localizedCaseInsensitiveContains("writer") }
+                .map(\.name).joined(separator: ", ") ?? ""
 
-            let artists = detail.credits
-                .filter { $0.role.contains { $0.name.localizedCaseInsensitiveContains("pencill") || $0.name.localizedCaseInsensitiveContains("artist") } }
-                .map(\.creator).joined(separator: ", ")
+            let artists = detail.personCredits?
+                .filter { $0.role.localizedCaseInsensitiveContains("penciler") || $0.role.localizedCaseInsensitiveContains("artist") }
+                .map(\.name).joined(separator: ", ") ?? ""
 
-            let genres = detail.genres.map(\.name).joined(separator: ", ")
+            let publisher = detail.volume?.publisher?.name ?? result.publisher
 
             return ComicSearchResult(
                 id:          result.id,
-                source:      .metron,
+                source:      .comicVine,
                 title:       result.title,
                 issueNumber: result.issueNumber,
                 author:      writers.isEmpty  ? result.author    : writers,
                 artist:      artists.isEmpty  ? result.artist    : artists,
-                publisher:   result.publisher,
-                genre:       genres.isEmpty   ? result.genre     : genres,
+                publisher:   publisher.isEmpty ? result.publisher : publisher,
+                genre:       result.genre,
                 coverURL:    result.coverURL,
                 releaseDate: result.releaseDate
             )
@@ -237,66 +248,94 @@ actor ComicSearchService {
     """
 }
 
-// MARK: - Metron JSON Models
+// MARK: - Comic Vine JSON Models
 
-private struct MetronListResponse: Codable {
-    let results: [MetronIssueSummary]
-}
-
-private struct MetronIssueSummary: Codable {
-    let id:        Int
-    let publisher: MetronNamedItem
-    let series:    MetronNamedItem
-    let number:    String
-    let coverDate: String?
-    let image:     String?
-    let genres:    [MetronNamedItem]
-
+private nonisolated struct CVSearchResponse: Decodable {
+    let statusCode: Int
+    let results:    [CVIssueSummary]
     enum CodingKeys: String, CodingKey {
-        case id, publisher, series, number, image, genres
-        case coverDate = "cover_date"
+        case statusCode = "status_code"
+        case results
     }
 }
 
-private struct MetronIssueDetail: Codable {
-    let genres:  [MetronNamedItem]
-    let credits: [MetronCredit]
+private nonisolated struct CVIssueSummary: Decodable {
+    let id:          Int
+    let name:        String?
+    let issueNumber: String?
+    let volume:      CVVolumeSummary?
+    let coverDate:   String?
+    let image:       CVImage?
+    enum CodingKeys: String, CodingKey {
+        case id, name, volume, image
+        case issueNumber = "issue_number"
+        case coverDate   = "cover_date"
+    }
 }
 
-private struct MetronCredit: Codable {
-    let creator: String
-    let role:    [MetronNamedItem]
+private nonisolated struct CVVolumeSummary: Decodable {
+    let id:        Int
+    let name:      String
+    let publisher: CVPublisher?
 }
 
-private struct MetronNamedItem: Codable {
-    let id:   Int
+private nonisolated struct CVPublisher: Decodable {
     let name: String
+}
+
+private nonisolated struct CVImage: Decodable {
+    let mediumURL: String?
+    enum CodingKeys: String, CodingKey {
+        case mediumURL = "medium_url"
+    }
+}
+
+private nonisolated struct CVDetailResponse: Decodable {
+    let statusCode: Int
+    let results:    CVIssueDetail
+    enum CodingKeys: String, CodingKey {
+        case statusCode = "status_code"
+        case results
+    }
+}
+
+private nonisolated struct CVIssueDetail: Decodable {
+    let volume:        CVVolumeSummary?
+    let personCredits: [CVPerson]?
+    enum CodingKeys: String, CodingKey {
+        case volume
+        case personCredits = "person_credits"
+    }
+}
+
+private nonisolated struct CVPerson: Decodable {
+    let name: String
+    let role: String
 }
 
 // MARK: - AniList JSON Models
 
-private struct AniListRequest: Encodable {
+private nonisolated struct AniListRequest: Encodable {
     let query:     String
     let variables: Variables
-
     struct Variables: Encodable {
         let search: String
     }
 }
 
-private struct AniListResponse: Decodable {
+private nonisolated struct AniListResponse: Decodable {
     let data: AniListData
 }
 
-private struct AniListData: Decodable {
+private nonisolated struct AniListData: Decodable {
     let Page: AniListPage
 }
 
-private struct AniListPage: Decodable {
+private nonisolated struct AniListPage: Decodable {
     let media: [AniListMedia]
 }
 
-private struct AniListMedia: Decodable {
+private nonisolated struct AniListMedia: Decodable {
     let id:         Int
     let title:      AniListTitle
     let staff:      AniListStaffConnection?
@@ -306,34 +345,34 @@ private struct AniListMedia: Decodable {
     let volumes:    Int?
 }
 
-private struct AniListTitle: Decodable {
+private nonisolated struct AniListTitle: Decodable {
     let romaji:  String
     let english: String?
 }
 
-private struct AniListStaffConnection: Decodable {
+private nonisolated struct AniListStaffConnection: Decodable {
     let edges: [AniListStaffEdge]
 }
 
-private struct AniListStaffEdge: Decodable {
+private nonisolated struct AniListStaffEdge: Decodable {
     let role: String
     let node: AniListStaffNode
 }
 
-private struct AniListStaffNode: Decodable {
+private nonisolated struct AniListStaffNode: Decodable {
     let name: AniListPersonName
 }
 
-private struct AniListPersonName: Decodable {
+private nonisolated struct AniListPersonName: Decodable {
     let full: String
 }
 
-private struct AniListFuzzyDate: Decodable {
+private nonisolated struct AniListFuzzyDate: Decodable {
     let year:  Int?
     let month: Int?
     let day:   Int?
 }
 
-private struct AniListCoverImage: Decodable {
+private nonisolated struct AniListCoverImage: Decodable {
     let large: String
 }

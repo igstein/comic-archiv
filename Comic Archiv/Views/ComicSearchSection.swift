@@ -10,12 +10,15 @@ import SwiftUI
 struct ComicSearchSection: View {
     let onSelect: (ComicSearchResult) -> Void
 
-    @State private var query            = ""
-    @State private var results:         [ComicSearchResult] = []
-    @State private var isSearching      = false
-    @State private var searchTask:      Task<Void, Never>?
-    @State private var showingMetronSetup = false
-    @State private var metronConfigured = KeychainHelper.metronUsername != nil
+    @AppStorage("comicvine_api_key") private var comicVineApiKey = ""
+
+    @State private var query          = ""
+    @State private var results:       [ComicSearchResult] = []
+    @State private var isSearching    = false
+    @State private var searchTask:    Task<Void, Never>?
+    @State private var showingCVSetup = false
+
+    private var cvConfigured: Bool { !comicVineApiKey.isEmpty }
 
     var body: some View {
         Section {
@@ -51,24 +54,21 @@ struct ComicSearchSection: View {
                 .buttonStyle(.plain)
             }
 
-            // Metron setup prompt
-            if !metronConfigured {
-                HStack {
-                    Image(systemName: "info.circle").foregroundStyle(.secondary)
-                    Text("Add Metron credentials for Western comics")
-                        .font(.caption).foregroundStyle(.secondary)
-                    Spacer()
-                    Button("Configure") { showingMetronSetup = true }
-                        .font(.caption)
-                }
+            // Comic Vine credential row — always visible
+            HStack {
+                Image(systemName: cvConfigured ? "checkmark.circle.fill" : "info.circle")
+                    .foregroundStyle(cvConfigured ? .green : .secondary)
+                Text(cvConfigured ? "Comic Vine: configured" : "Add Comic Vine API key for Western comics")
+                    .font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Button(cvConfigured ? "Change" : "Configure") { showingCVSetup = true }
+                    .font(.caption)
             }
         } header: {
             Text("Auto-fill from Search")
         }
-        .sheet(isPresented: $showingMetronSetup, onDismiss: {
-            metronConfigured = KeychainHelper.metronUsername != nil
-        }) {
-            MetronSetupSheet()
+        .sheet(isPresented: $showingCVSetup) {
+            ComicVineSetupSheet()
         }
     }
 
@@ -98,14 +98,12 @@ struct SearchResultRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            // Source badge
             Text(result.source.label)
                 .font(.caption2).fontWeight(.semibold)
                 .padding(.horizontal, 6).padding(.vertical, 2)
                 .background(Capsule().fill(result.source.color.opacity(0.15)))
                 .foregroundStyle(result.source.color)
 
-            // Cover thumbnail
             AsyncImage(url: result.coverURL) { phase in
                 if case .success(let image) = phase {
                     image.resizable().aspectRatio(contentMode: .fill)
@@ -118,7 +116,6 @@ struct SearchResultRow: View {
                 }
             }
 
-            // Info
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 4) {
                     Text(result.title).font(.headline).lineLimit(1)
@@ -140,56 +137,52 @@ struct SearchResultRow: View {
     }
 }
 
-// MARK: - Metron Credentials Setup
+// MARK: - Comic Vine API Key Setup
 
-struct MetronSetupSheet: View {
+struct ComicVineSetupSheet: View {
     @Environment(\.dismiss) private var dismiss
-
-    @State private var username = KeychainHelper.metronUsername ?? ""
-    @State private var password = KeychainHelper.metronPassword ?? ""
+    @AppStorage("comicvine_api_key") private var savedKey = ""
+    @State private var apiKey = ""
 
     var body: some View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Username", text: $username)
-                    SecureField("Password", text: $password)
+                    TextField("API Key", text: $apiKey)
                 } header: {
-                    Text("Metron Account")
+                    Text("Comic Vine API Key")
                 } footer: {
-                    Text("Register for free at metron.cloud. Credentials are stored in the macOS Keychain.")
+                    Text("Get a free API key at comicvine.gamespot.com/api/")
                         .font(.caption)
                 }
 
-                if KeychainHelper.metronUsername != nil {
+                if !savedKey.isEmpty {
                     Section {
                         Button(role: .destructive) {
-                            KeychainHelper.metronUsername = nil
-                            KeychainHelper.metronPassword = nil
-                            username = ""
-                            password = ""
+                            savedKey = ""
+                            apiKey   = ""
                         } label: {
-                            Label("Remove Credentials", systemImage: "trash")
+                            Label("Remove API Key", systemImage: "trash")
                         }
                     }
                 }
             }
             .formStyle(.grouped)
-            .navigationTitle("Metron Credentials")
+            .navigationTitle("Comic Vine")
+            .onAppear { apiKey = savedKey }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        KeychainHelper.metronUsername = username
-                        KeychainHelper.metronPassword = password
+                        savedKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
                         dismiss()
                     }
-                    .disabled(username.isEmpty || password.isEmpty)
+                    .disabled(apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
         }
-        .frame(minWidth: 400, minHeight: 240)
+        .frame(minWidth: 400, minHeight: 220)
     }
 }

@@ -38,6 +38,8 @@ struct AddComicSheetForPlaceholder: View {
     var body: some View {
         NavigationStack {
             Form {
+                ComicSearchSection { result in applyResult(result) }
+
                 Section("Comic Details") {
                     TextField("Title",          text: $title)
                     TextField("Author",         text: $author)
@@ -90,6 +92,31 @@ struct AddComicSheetForPlaceholder: View {
             }
         }
         .frame(minWidth: 500, minHeight: 500)
+    }
+
+    private func applyResult(_ result: ComicSearchResult) {
+        title       = result.title
+        publisher   = result.publisher
+        issueNumber = result.issueNumber
+        if !result.author.isEmpty { author = result.author }
+        if !result.artist.isEmpty { artist = result.artist }
+        if !result.genre.isEmpty  { genre  = result.genre  }
+        if let date = result.releaseDate { releaseDate = date }
+
+        if let url = result.coverURL {
+            Task { @MainActor in
+                if let (data, _) = try? await URLSession.shared.data(from: url),
+                   let image = NSImage(data: data) { coverImage = image }
+            }
+        }
+        if case .comicVine = result.source {
+            Task { @MainActor in
+                let full = await ComicSearchService.shared.enrichComicVineResult(result)
+                if !full.author.isEmpty { author = full.author }
+                if !full.artist.isEmpty { artist = full.artist }
+                if !full.genre.isEmpty  { genre  = full.genre  }
+            }
+        }
     }
 
     private func selectImage() {
