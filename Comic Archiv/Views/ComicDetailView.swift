@@ -67,12 +67,21 @@ struct ComicDetailView: View {
                     HStack {
                         Text("Series Length")
                         Spacer()
-                        TextField("Unknown", text: $seriesLengthText)
-                            .multilineTextAlignment(.trailing)
-                            .frame(width: 80)
-                            .onChange(of: seriesLengthText) { _, val in
-                                seriesLengthText = val.filter(\.isNumber)
-                            }
+                        if seriesLengthText.isEmpty {
+                            Text("Unknown").foregroundStyle(.tertiary)
+                        } else {
+                            TextField("", text: $seriesLengthText)
+                                .multilineTextAlignment(.trailing)
+                                .frame(width: 50)
+                                .onChange(of: seriesLengthText) { _, val in
+                                    seriesLengthText = val.filter(\.isNumber)
+                                }
+                        }
+                        Stepper("", value: Binding(
+                            get: { Int(seriesLengthText) ?? 0 },
+                            set: { seriesLengthText = $0 > 0 ? String($0) : "" }
+                        ), in: 0...9999)
+                        .labelsHidden()
                     }
                 }
 
