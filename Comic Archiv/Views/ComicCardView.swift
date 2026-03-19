@@ -81,6 +81,10 @@ struct ComicCardView: View {
                                 .fontWeight(.medium)
                         }
                     }
+
+                    if comic.readStatus == .finished && comic.rating > 0 {
+                        StarRatingView(rating: comic.rating, starSize: 11)
+                    }
                 }
             }
             .padding(8)
