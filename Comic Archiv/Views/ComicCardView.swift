@@ -31,6 +31,8 @@ struct ComicCardView: View {
                                 .frame(maxWidth: .infinity)
                                 .aspectRatio(2/3, contentMode: .fit)
                                 .clipShape(RoundedRectangle(cornerRadius: 8))
+                                .brightness(comic.readStatus == .finished ? -0.3 : comic.readStatus == .abandoned ? -0.45 : 0)
+                                .saturation(comic.readStatus == .finished ? 0.5 : comic.readStatus == .abandoned ? 0.2 : 1)
                         } else {
                             Image(systemName: "book.closed")
                                 .font(.system(size: 40))
@@ -84,6 +86,10 @@ struct ComicCardView: View {
             .padding(8)
             .background(Color(.windowBackgroundColor))
             .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(borderColor, lineWidth: comic.readStatus == .unread || comic.readStatus == .reading ? 0 : 2)
+            )
             .shadow(
                 color: .black.opacity(isDragging ? 0.3 : (isHovering ? 0.15 : 0.1)),
                 radius: isDragging ? 12 : (isHovering ? 8 : 4),
@@ -136,27 +142,33 @@ struct ComicCardView: View {
     private var statusBadge: some View {
         switch comic.readStatus {
         case .finished:
-            Image(systemName: "checkmark.circle.fill")
-                .font(.title3).foregroundStyle(.white)
-                .background(Circle().fill(.green).padding(-4))
-                .padding(4)
-        case .reading:
-            Image(systemName: "book.fill")
-                .font(.title3).foregroundStyle(.white)
-                .background(Circle().fill(.blue).padding(-4))
-                .padding(4)
-        case .paused:
-            Image(systemName: "pause.circle.fill")
-                .font(.title3).foregroundStyle(.white)
-                .background(Circle().fill(.orange).padding(-4))
-                .padding(4)
+            statusPill(label: "✓ Finished", color: .green)
         case .abandoned:
-            Image(systemName: "xmark.circle.fill")
-                .font(.title3).foregroundStyle(.white)
-                .background(Circle().fill(.red).padding(-4))
-                .padding(4)
+            statusPill(label: "✗ Abandoned", color: .gray)
+        case .reading:
+            statusPill(label: "Reading", color: .blue)
+        case .paused:
+            statusPill(label: "Paused", color: .orange)
         case .unread:
             EmptyView()
+        }
+    }
+
+    private func statusPill(label: String, color: Color) -> some View {
+        Text(label)
+            .font(.system(size: 9, weight: .bold))
+            .textCase(.uppercase)
+            .foregroundStyle(.white)
+            .padding(.horizontal, 6).padding(.vertical, 3)
+            .background(Capsule().fill(color))
+    }
+
+    private var borderColor: Color {
+        switch comic.readStatus {
+        case .finished:  return .green
+        case .abandoned: return .gray
+        case .paused:    return .orange
+        default:         return .clear
         }
     }
 
