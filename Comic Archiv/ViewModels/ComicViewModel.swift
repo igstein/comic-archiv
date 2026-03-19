@@ -213,6 +213,50 @@ class ComicViewModel {
             .map { $0.0 }
     }
 
+    // MARK: - XLSX Import
+
+    func importComics(rows: [ComicRow], skipDuplicates: Bool) {
+        let allComics = (try? modelContext.fetch(FetchDescriptor<Comic>())) ?? []
+        let existingTitles = Set(allComics.map { $0.title.lowercased() })
+
+        let descriptor = FetchDescriptor<ComicList>(predicate: #Predicate { $0.isMainCollection })
+        guard let mainCollection = try? modelContext.fetch(descriptor).first else { return }
+
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        df.locale = Locale(identifier: "en_US_POSIX")
+
+        let fallbackDate: Date = {
+            var c = DateComponents(); c.year = 1900; c.month = 1; c.day = 1
+            return Calendar.current.date(from: c) ?? Date()
+        }()
+
+        for row in rows {
+            if skipDuplicates && existingTitles.contains(row.title.lowercased()) { continue }
+
+            let comic = Comic(
+                title: row.title,
+                author: row.author,
+                artist: row.artist,
+                publisher: row.publisher,
+                releaseDate: df.date(from: row.releaseDate) ?? fallbackDate,
+                issueNumber: row.issueNumber,
+                readStatus: ReadStatus(rawValue: row.readStatus) ?? .unread,
+                priority: Priority(rawValue: row.priority) ?? .medium,
+                genre: row.genre,
+                notes: row.notes,
+                series: row.series.isEmpty ? row.title : row.series,
+                seriesLength: Int(row.seriesLength),
+                rating: Double(row.rating) ?? 0.0,
+                format: ComicFormat(rawValue: row.format) ?? .physical
+            )
+            if let lastReadAt = df.date(from: row.lastReadAt) {
+                comic.lastReadAt = lastReadAt
+            }
+            addComic(comic, toList: mainCollection)
+        }
+    }
+
     // MARK: - Private
 
     private func save() {

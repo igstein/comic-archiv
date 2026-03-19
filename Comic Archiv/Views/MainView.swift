@@ -5,6 +5,7 @@
 
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 struct MainView: View {
     @Environment(\.modelContext) private var modelContext
@@ -20,6 +21,13 @@ struct MainView: View {
     @State private var selectedComicFromSuggestion: Comic?
     @State private var showingMALImport = false
     @State private var selectedSeries: String?
+    @State private var xlsxImportRows: [ComicRow] = []
+    @State private var showingXLSXImportPreview = false
+    @State private var xlsxDocument: XLSXDocument?
+    @State private var showingXLSXExporter = false
+    @State private var showingXLSXImporter = false
+    @State private var xlsxErrorMessage: String?
+    @State private var showingXLSXError = false
 
     enum SortOrder: String, CaseIterable {
         case title     = "Title"
@@ -143,6 +151,30 @@ struct MainView: View {
                     Label("Import from MAL", systemImage: "arrow.down.circle")
                 }
                 .help("Import manga from MyAnimeList")
+
+                Menu {
+                    Button {
+                        do {
+                            let data = try XLSXService.shared.exportData(comics: comics)
+                            xlsxDocument = XLSXDocument(data: data)
+                            showingXLSXExporter = true
+                        } catch {
+                            xlsxErrorMessage = error.localizedDescription
+                            showingXLSXError = true
+                        }
+                    } label: {
+                        Label("Export as XLSX...", systemImage: "arrow.up.doc")
+                    }
+
+                    Button {
+                        showingXLSXImporter = true
+                    } label: {
+                        Label("Import from XLSX...", systemImage: "arrow.down.doc")
+                    }
+                } label: {
+                    Label("XLSX", systemImage: "tablecells")
+                }
+                .help("Import or export comics as spreadsheet")
             }
         }
         .onAppear {
@@ -163,6 +195,53 @@ struct MainView: View {
             if let viewModel = viewModel {
                 MALImportView(viewModel: viewModel)
             }
+        }
+        .sheet(isPresented: $showingXLSXImportPreview) {
+            if let viewModel = viewModel {
+                XLSXImportPreviewView(
+                    rows: xlsxImportRows,
+                    existingTitles: Set(comics.map { $0.title.lowercased() })
+                ) { skipDuplicates in
+                    viewModel.importComics(rows: xlsxImportRows, skipDuplicates: skipDuplicates)
+                }
+            }
+        }
+        .fileExporter(
+            isPresented: $showingXLSXExporter,
+            document: xlsxDocument,
+            contentType: UTType(filenameExtension: "xlsx") ?? .data,
+            defaultFilename: "ComicArchiv_Export"
+        ) { result in
+            xlsxDocument = nil
+            if case .failure(let error) = result {
+                xlsxErrorMessage = error.localizedDescription
+                showingXLSXError = true
+            }
+        }
+        .fileImporter(
+            isPresented: $showingXLSXImporter,
+            allowedContentTypes: [UTType(filenameExtension: "xlsx") ?? .data]
+        ) { result in
+            switch result {
+            case .success(let url):
+                let accessing = url.startAccessingSecurityScopedResource()
+                defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+                do {
+                    xlsxImportRows = try XLSXService.shared.importComics(from: url)
+                    showingXLSXImportPreview = true
+                } catch {
+                    xlsxErrorMessage = error.localizedDescription
+                    showingXLSXError = true
+                }
+            case .failure(let error):
+                xlsxErrorMessage = error.localizedDescription
+                showingXLSXError = true
+            }
+        }
+        .alert("XLSX Error", isPresented: $showingXLSXError) {
+            Button("OK") {}
+        } message: {
+            Text(xlsxErrorMessage ?? "An unknown error occurred.")
         }
         .sheet(item: $selectedComicFromSuggestion) { comic in
             if let viewModel = viewModel {

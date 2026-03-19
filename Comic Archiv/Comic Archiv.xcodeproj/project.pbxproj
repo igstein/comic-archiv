@@ -16,6 +16,9 @@
 		BB000009BB000009BB000009 /* MALImportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000010BB000010BB000010 /* MALImportView.swift */; };
 		BB000015BB000015BB000015 /* StarRatingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000016BB000016BB000016 /* StarRatingView.swift */; };
 		BB000017BB000017BB000017 /* SeriesGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000018BB000018BB000018 /* SeriesGridView.swift */; };
+		BB000019BB000019BB000019 /* AppSchema.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000020BB000020BB000020 /* AppSchema.swift */; };
+		BB000021BB000021BB000021 /* XLSXService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000022BB000022BB000022 /* XLSXService.swift */; };
+		BB000023BB000023BB000023 /* XLSXImportPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000024BB000024BB000024 /* XLSXImportPreviewView.swift */; };
 		BB000011BB000011BB000011 /* Secrets.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000012BB000012BB000012 /* Secrets.swift */; };
 		A8C4EF8E2F28C63300DA6EB2 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8C4EF8D2F28C63300DA6EB2 /* ContentView.swift */; };
 		A8C4EF902F28C63300DA6EB2 /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8C4EF8F2F28C63300DA6EB2 /* Item.swift */; };
@@ -95,6 +98,9 @@
 		BB000008BB000008BB000008 /* MALImportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MALImportService.swift; sourceTree = "<group>"; };
 		BB000016BB000016BB000016 /* StarRatingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarRatingView.swift; sourceTree = "<group>"; };
 		BB000018BB000018BB000018 /* SeriesGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeriesGridView.swift; sourceTree = "<group>"; };
+		BB000020BB000020BB000020 /* AppSchema.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSchema.swift; sourceTree = "<group>"; };
+		BB000022BB000022BB000022 /* XLSXService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XLSXService.swift; sourceTree = "<group>"; };
+		BB000024BB000024BB000024 /* XLSXImportPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XLSXImportPreviewView.swift; sourceTree = "<group>"; };
 		BB000010BB000010BB000010 /* MALImportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MALImportView.swift; sourceTree = "<group>"; };
 		BB000012BB000012BB000012 /* Secrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Secrets.swift; sourceTree = "<group>"; };
 		BB000013BB000013BB000013 /* Secrets.template.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Secrets.template.swift; sourceTree = "<group>"; };
@@ -180,6 +186,7 @@
 				A8C4EFD42F2A715200DA6EB2 /* ReadingOrderEntry.swift */,
 				A8C4EFBE2F291A7600DA6EB2 /* TestData.swift */,
 				A8F370672F2CAF9000831043 /* PlaceholderComic.swift */,
+				BB000020BB000020BB000020 /* AppSchema.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -207,6 +214,7 @@
 				BB000010BB000010BB000010 /* MALImportView.swift */,
 				BB000016BB000016BB000016 /* StarRatingView.swift */,
 				BB000018BB000018BB000018 /* SeriesGridView.swift */,
+				BB000024BB000024BB000024 /* XLSXImportPreviewView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -226,6 +234,7 @@
 				BB000002BB000002BB000002 /* ComicSearchService.swift */,
 				BB000006BB000006BB000006 /* KeychainHelper.swift */,
 				BB000008BB000008BB000008 /* MALImportService.swift */,
+				BB000022BB000022BB000022 /* XLSXService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -399,6 +408,7 @@
 				A8C4EFC92F291E5E00DA6EB2 /* ComicViewModel.swift in Sources */,
 				A8C4EFC32F291B7500DA6EB2 /* SidebarView.swift in Sources */,
 				A8F370682F2CAF9000831043 /* PlaceholderComic.swift in Sources */,
+				BB000019BB000019BB000019 /* AppSchema.swift in Sources */,
 				A8C4EFC12F291B4B00DA6EB2 /* MainView.swift in Sources */,
 				A8C4EFC52F291C8100DA6EB2 /* ComicGridView.swift in Sources */,
 				A8F3705E2F2B52AD00831043 /* AddReadingOrderSheet.swift in Sources */,
@@ -425,6 +435,8 @@
 				A8C4EFC72F291C9E00DA6EB2 /* ComicCardView.swift in Sources */,
 				A8C4EFCF2F29249900DA6EB2 /* AddListeSheet.swift in Sources */,
 				A8F3706A2F2CF6B100831043 /* WishlistContentView.swift in Sources */,
+				BB000021BB000021BB000021 /* XLSXService.swift in Sources */,
+				BB000023BB000023BB000023 /* XLSXImportPreviewView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -601,7 +613,7 @@
 				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
 				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
 				ENABLE_RESOURCE_ACCESS_USB = NO;
-				ENABLE_USER_SELECTED_FILES = readonly;
+				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -642,7 +654,7 @@
 				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
 				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
 				ENABLE_RESOURCE_ACCESS_USB = NO;
-				ENABLE_USER_SELECTED_FILES = readonly;
+				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
