@@ -235,7 +235,6 @@ struct MALImportView: View {
             for entry in toImport {
                 let node    = entry.node
                 let numRead = entry.listStatus?.numVolumesRead ?? 0
-                guard numRead > 0 else { continue }
 
                 let authors = node.authors?
                     .filter { $0.role?.lowercased().contains("story") == true }
@@ -262,14 +261,38 @@ struct MALImportView: View {
                     coverImage = NSImage(data: data)
                 }
 
-                // One Comic per volume read — skip already imported volumes
-                for vol in 1...numRead {
-                    let issueNumber = "Vol. \(vol)"
-                    let key = "\(node.title)||||\(issueNumber)"
-                    guard !existingKeys.contains(key) else { continue }
+                if numRead > 0 {
+                    // One Comic per volume read — skip already imported volumes
+                    for vol in 1...numRead {
+                        let issueNumber = "Vol. \(vol)"
+                        let key = "\(node.title)||||\(issueNumber)"
+                        guard !existingKeys.contains(key) else { continue }
 
-                    let volStatus: ReadStatus = (vol < numRead) ? .finished
-                        : (entry.listStatus?.readStatus ?? .finished)
+                        let volStatus: ReadStatus = (vol < numRead) ? .finished
+                            : (entry.listStatus?.readStatus ?? .finished)
+
+                        let comic = Comic(
+                            title:        node.title,
+                            author:       authors.joined(separator: ", "),
+                            artist:       artists.joined(separator: ", "),
+                            publisher:    "",
+                            releaseDate:  releaseDate ?? defaultDate,
+                            issueNumber:  issueNumber,
+                            readStatus:   volStatus,
+                            priority:     .medium,
+                            genre:        genres,
+                            series:       node.title,
+                            seriesLength: node.numVolumes
+                        )
+                        if let image = coverImage { viewModel.setCoverImage(image, for: comic) }
+                        if let list = mainCollection { viewModel.addComic(comic, toList: list) }
+                        else { modelContext.insert(comic) }
+                        comicCount += 1
+                    }
+                } else {
+                    // No volumes read — import as a single entry with MAL status
+                    let key = "\(node.title)||||"
+                    guard !existingKeys.contains(key) else { continue }
 
                     let comic = Comic(
                         title:        node.title,
@@ -277,8 +300,8 @@ struct MALImportView: View {
                         artist:       artists.joined(separator: ", "),
                         publisher:    "",
                         releaseDate:  releaseDate ?? defaultDate,
-                        issueNumber:  issueNumber,
-                        readStatus:   volStatus,
+                        issueNumber:  "",
+                        readStatus:   entry.listStatus?.readStatus ?? .unread,
                         priority:     .medium,
                         genre:        genres,
                         series:       node.title,
