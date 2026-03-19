@@ -112,7 +112,8 @@ struct MainView: View {
                             SeriesGridView(
                                 comics: sortedComics,
                                 viewModel: viewModel,
-                                onSelectSeries: { selectedSeries = $0 }
+                                onSelectSeries: { selectedSeries = $0 },
+                                onAddComic: { showingAddComic = true }
                             )
                         }
                     }

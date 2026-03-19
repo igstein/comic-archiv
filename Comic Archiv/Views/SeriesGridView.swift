@@ -32,6 +32,7 @@ struct SeriesGridView: View {
     let comics: [Comic]
     let viewModel: ComicViewModel?
     let onSelectSeries: (String) -> Void
+    var onAddComic: (() -> Void)?
 
     private let columns = [GridItem(.adaptive(minimum: 160, maximum: 220), spacing: 24)]
 
@@ -73,6 +74,17 @@ struct SeriesGridView: View {
                     .padding(.horizontal, 20)
                 }
                 .padding(.bottom, 20)
+            }
+        }
+        .toolbar {
+            if let onAddComic {
+                ToolbarItem(placement: .automatic) {
+                    Button { onAddComic() } label: {
+                        Label("Add Comic", systemImage: "plus")
+                    }
+                    .keyboardShortcut("n", modifiers: .command)
+                    .help("Add new comic (⌘N)")
+                }
             }
         }
         .sheet(item: $selectedComic) { comic in
