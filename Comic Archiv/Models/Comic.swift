@@ -131,7 +131,7 @@ final class Comic {
         priority: Priority = .medium,
         genre: String = "",
         notes: String = "",
-        series: String = "",
+        series: String,
         seriesLength: Int? = nil,
         rating: Double = 0.0,
         format: ComicFormat = .physical

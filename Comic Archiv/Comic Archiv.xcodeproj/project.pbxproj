@@ -15,6 +15,7 @@
 		BB000007BB000007BB000007 /* MALImportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000008BB000008BB000008 /* MALImportService.swift */; };
 		BB000009BB000009BB000009 /* MALImportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000010BB000010BB000010 /* MALImportView.swift */; };
 		BB000015BB000015BB000015 /* StarRatingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000016BB000016BB000016 /* StarRatingView.swift */; };
+		BB000017BB000017BB000017 /* SeriesGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000018BB000018BB000018 /* SeriesGridView.swift */; };
 		BB000011BB000011BB000011 /* Secrets.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000012BB000012BB000012 /* Secrets.swift */; };
 		A8C4EF8E2F28C63300DA6EB2 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8C4EF8D2F28C63300DA6EB2 /* ContentView.swift */; };
 		A8C4EF902F28C63300DA6EB2 /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8C4EF8F2F28C63300DA6EB2 /* Item.swift */; };
@@ -93,6 +94,7 @@
 		BB000006BB000006BB000006 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
 		BB000008BB000008BB000008 /* MALImportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MALImportService.swift; sourceTree = "<group>"; };
 		BB000016BB000016BB000016 /* StarRatingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarRatingView.swift; sourceTree = "<group>"; };
+		BB000018BB000018BB000018 /* SeriesGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeriesGridView.swift; sourceTree = "<group>"; };
 		BB000010BB000010BB000010 /* MALImportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MALImportView.swift; sourceTree = "<group>"; };
 		BB000012BB000012BB000012 /* Secrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Secrets.swift; sourceTree = "<group>"; };
 		BB000013BB000013BB000013 /* Secrets.template.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Secrets.template.swift; sourceTree = "<group>"; };
@@ -204,6 +206,7 @@
 				BB000004BB000004BB000004 /* ComicSearchSection.swift */,
 				BB000010BB000010BB000010 /* MALImportView.swift */,
 				BB000016BB000016BB000016 /* StarRatingView.swift */,
+				BB000018BB000018BB000018 /* SeriesGridView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -408,6 +411,7 @@
 				BB000005BB000005BB000005 /* KeychainHelper.swift in Sources */,
 				BB000007BB000007BB000007 /* MALImportService.swift in Sources */,
 				BB000015BB000015BB000015 /* StarRatingView.swift in Sources */,
+				BB000017BB000017BB000017 /* SeriesGridView.swift in Sources */,
 				BB000011BB000011BB000011 /* Secrets.swift in Sources */,
 				BB000009BB000009BB000009 /* MALImportView.swift in Sources */,
 				BB000003BB000003BB000003 /* ComicSearchSection.swift in Sources */,

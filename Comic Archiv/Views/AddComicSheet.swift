@@ -122,7 +122,7 @@ struct AddComicSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Add") { addComic() }.disabled(title.isEmpty)
+                    Button("Add") { addComic() }.disabled(title.isEmpty || series.isEmpty)
                 }
             }
         }
@@ -131,6 +131,7 @@ struct AddComicSheet: View {
 
     private func applyResult(_ result: ComicSearchResult) {
         title       = result.title
+        series      = result.title
         publisher   = result.publisher
         issueNumber = result.issueNumber
         if !result.author.isEmpty { author = result.author }

@@ -136,6 +136,7 @@ struct AddComicSheetFromWishlist: View {
     @State private var readStatus: ReadStatus = .unread
     @State private var priority: Priority = .medium
     @State private var genre = ""
+    @State private var series = ""
     @State private var coverImage: NSImage?
 
     init(placeholder: PlaceholderComic, viewModel: ComicViewModel) {
@@ -207,6 +208,7 @@ struct AddComicSheetFromWishlist: View {
 
     private func applyResult(_ result: ComicSearchResult) {
         title       = result.title
+        series      = result.title
         publisher   = result.publisher
         issueNumber = result.issueNumber
         if !result.author.isEmpty { author = result.author }
@@ -244,7 +246,8 @@ struct AddComicSheetFromWishlist: View {
     private func addComic() {
         let newComic = Comic(title: title, author: author, artist: artist, publisher: publisher,
                             releaseDate: releaseDate, issueNumber: issueNumber,
-                            readStatus: readStatus, priority: priority, genre: genre)
+                            readStatus: readStatus, priority: priority, genre: genre,
+                            series: series)
         if let image = coverImage { viewModel.setCoverImage(image, for: newComic) }
 
         let descriptor = FetchDescriptor<ComicList>(predicate: #Predicate { $0.isMainCollection })

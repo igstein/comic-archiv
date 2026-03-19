@@ -19,6 +19,7 @@ struct MainView: View {
     @State private var readFilter: ReadFilter = .all
     @State private var selectedComicFromSuggestion: Comic?
     @State private var showingMALImport = false
+    @State private var selectedSeries: String?
 
     enum SortOrder: String, CaseIterable {
         case title     = "Title"
@@ -77,13 +78,38 @@ struct MainView: View {
                             }
                         }
 
-                        ComicGridView(
-                            comics: sortedComics,
-                            onAddComic: { showingAddComic = true },
-                            viewModel: viewModel
-                        )
-                        .searchable(text: $searchText, placement: .toolbar, prompt: "Search comics...")
+                        if let series = selectedSeries {
+                            // Back bar
+                            HStack(spacing: 8) {
+                                Button { selectedSeries = nil } label: {
+                                    Label("All Series", systemImage: "chevron.left")
+                                }
+                                .buttonStyle(.plain)
+                                .foregroundStyle(Color.accentColor)
+
+                                Text(series)
+                                    .font(.headline)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 10)
+                            Divider()
+
+                            ComicGridView(
+                                comics: sortedComics.filter { $0.series == series },
+                                onAddComic: { showingAddComic = true },
+                                viewModel: viewModel
+                            )
+                        } else {
+                            SeriesGridView(
+                                comics: sortedComics,
+                                viewModel: viewModel,
+                                onSelectSeries: { selectedSeries = $0 }
+                            )
+                        }
                     }
+                    .searchable(text: $searchText, placement: .toolbar, prompt: "Search comics...")
+                    .onChange(of: selectedList) { _, _ in selectedSeries = nil }
                 }
             }
         }

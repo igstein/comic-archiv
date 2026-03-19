@@ -197,25 +197,28 @@ private struct SuggestionCard: View {
         publisher: "Marvel",
         issueNumber: "1",
         readStatus: .reading,
-        priority: .mustRead
+        priority: .mustRead,
+        series: "The Amazing Spider-Man"
     )
-    
+
     let comic2 = Comic(
         title: "Batman: The Killing Joke",
         author: "Alan Moore",
         publisher: "DC Comics",
         issueNumber: "1",
         readStatus: .unread,
-        priority: .high
+        priority: .high,
+        series: "Batman: The Killing Joke"
     )
-    
+
     let comic3 = Comic(
         title: "Watchmen",
         author: "Alan Moore",
         publisher: "DC Comics",
         issueNumber: "1",
         readStatus: .unread,
-        priority: .medium
+        priority: .medium,
+        series: "Watchmen"
     )
     
     return WhatToReadNextView(comics: [comic1, comic2, comic3]) { comic in

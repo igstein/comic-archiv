@@ -10,19 +10,19 @@ struct TestData {
     static let sampleComics: [Comic] = [
         Comic(title: "Spider-Man: Blue", author: "Jeph Loeb", artist: "Tim Sale",
               publisher: "Marvel", issueNumber: "1",
-              readStatus: .finished, priority: .high, genre: "Superhero"),
+              readStatus: .finished, priority: .high, genre: "Superhero", series: "Spider-Man: Blue"),
         Comic(title: "Batman: Year One", author: "Frank Miller", artist: "David Mazzucchelli",
               publisher: "DC Comics", issueNumber: "1",
-              readStatus: .unread, priority: .mustRead, genre: "Superhero"),
+              readStatus: .unread, priority: .mustRead, genre: "Superhero", series: "Batman: Year One"),
         Comic(title: "Watchmen", author: "Alan Moore", artist: "Dave Gibbons",
               publisher: "DC Comics", issueNumber: "1",
-              readStatus: .finished, priority: .mustRead, genre: "Superhero"),
+              readStatus: .finished, priority: .mustRead, genre: "Superhero", series: "Watchmen"),
         Comic(title: "The Fantastic Four", author: "Stan Lee", artist: "Jack Kirby",
               publisher: "Marvel", issueNumber: "52",
-              readStatus: .unread, priority: .medium, genre: "Superhero"),
+              readStatus: .unread, priority: .medium, genre: "Superhero", series: "The Fantastic Four"),
         Comic(title: "Sandman", author: "Neil Gaiman", artist: "Sam Kieth",
               publisher: "DC/Vertigo", issueNumber: "1",
-              readStatus: .reading, priority: .high, genre: "Fantasy")
+              readStatus: .reading, priority: .high, genre: "Fantasy", series: "Sandman")
     ]
 
     static func createSampleLists() -> [ComicList] {
