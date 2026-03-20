@@ -9,17 +9,6 @@
 /* Begin PBXBuildFile section */
 		A8A57E5F2F6ACCCC001981F1 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = A8A57E5E2F6ACCCC001981F1 /* Info.plist */; };
 		A8A57E612F6AFE28001981F1 /* WhatToReadNextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A57E602F6AFE28001981F1 /* WhatToReadNextView.swift */; };
-		BB000001BB000001BB000001 /* ComicSearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000002BB000002BB000002 /* ComicSearchService.swift */; };
-		BB000003BB000003BB000003 /* ComicSearchSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000004BB000004BB000004 /* ComicSearchSection.swift */; };
-		BB000005BB000005BB000005 /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000006BB000006BB000006 /* KeychainHelper.swift */; };
-		BB000007BB000007BB000007 /* MALImportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000008BB000008BB000008 /* MALImportService.swift */; };
-		BB000009BB000009BB000009 /* MALImportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000010BB000010BB000010 /* MALImportView.swift */; };
-		BB000015BB000015BB000015 /* StarRatingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000016BB000016BB000016 /* StarRatingView.swift */; };
-		BB000017BB000017BB000017 /* SeriesGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000018BB000018BB000018 /* SeriesGridView.swift */; };
-		BB000019BB000019BB000019 /* AppSchema.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000020BB000020BB000020 /* AppSchema.swift */; };
-		BB000021BB000021BB000021 /* XLSXService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000022BB000022BB000022 /* XLSXService.swift */; };
-		BB000023BB000023BB000023 /* XLSXImportPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000024BB000024BB000024 /* XLSXImportPreviewView.swift */; };
-		BB000011BB000011BB000011 /* Secrets.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000012BB000012BB000012 /* Secrets.swift */; };
 		A8C4EF8E2F28C63300DA6EB2 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8C4EF8D2F28C63300DA6EB2 /* ContentView.swift */; };
 		A8C4EF902F28C63300DA6EB2 /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8C4EF8F2F28C63300DA6EB2 /* Item.swift */; };
 		A8C4EFBB2F29192700DA6EB2 /* Comic.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8C4EFBA2F29192700DA6EB2 /* Comic.swift */; };
@@ -44,6 +33,17 @@
 		A8F370662F2B8EF700831043 /* AddComicSheetForPlaceholder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8F370652F2B8EF700831043 /* AddComicSheetForPlaceholder.swift */; };
 		A8F370682F2CAF9000831043 /* PlaceholderComic.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8F370672F2CAF9000831043 /* PlaceholderComic.swift */; };
 		A8F3706A2F2CF6B100831043 /* WishlistContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8F370692F2CF6B100831043 /* WishlistContentView.swift */; };
+		BB000001BB000001BB000001 /* ComicSearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000002BB000002BB000002 /* ComicSearchService.swift */; };
+		BB000003BB000003BB000003 /* ComicSearchSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000004BB000004BB000004 /* ComicSearchSection.swift */; };
+		BB000005BB000005BB000005 /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000006BB000006BB000006 /* KeychainHelper.swift */; };
+		BB000007BB000007BB000007 /* MALImportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000008BB000008BB000008 /* MALImportService.swift */; };
+		BB000009BB000009BB000009 /* MALImportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000010BB000010BB000010 /* MALImportView.swift */; };
+		BB000011BB000011BB000011 /* Secrets.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000012BB000012BB000012 /* Secrets.swift */; };
+		BB000015BB000015BB000015 /* StarRatingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000016BB000016BB000016 /* StarRatingView.swift */; };
+		BB000017BB000017BB000017 /* SeriesGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000018BB000018BB000018 /* SeriesGridView.swift */; };
+		BB000019BB000019BB000019 /* AppSchema.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000020BB000020BB000020 /* AppSchema.swift */; };
+		BB000021BB000021BB000021 /* XLSXService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000022BB000022BB000022 /* XLSXService.swift */; };
+		BB000023BB000023BB000023 /* XLSXImportPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000024BB000024BB000024 /* XLSXImportPreviewView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -94,17 +94,17 @@
 		A8F370672F2CAF9000831043 /* PlaceholderComic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceholderComic.swift; sourceTree = "<group>"; };
 		A8F370692F2CF6B100831043 /* WishlistContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishlistContentView.swift; sourceTree = "<group>"; };
 		BB000002BB000002BB000002 /* ComicSearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComicSearchService.swift; sourceTree = "<group>"; };
+		BB000004BB000004BB000004 /* ComicSearchSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComicSearchSection.swift; sourceTree = "<group>"; };
 		BB000006BB000006BB000006 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
 		BB000008BB000008BB000008 /* MALImportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MALImportService.swift; sourceTree = "<group>"; };
+		BB000010BB000010BB000010 /* MALImportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MALImportView.swift; sourceTree = "<group>"; };
+		BB000012BB000012BB000012 /* Secrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Secrets.swift; sourceTree = "<group>"; };
+		BB000013BB000013BB000013 /* Secrets.template.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Secrets.template.swift; sourceTree = "<group>"; };
 		BB000016BB000016BB000016 /* StarRatingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarRatingView.swift; sourceTree = "<group>"; };
 		BB000018BB000018BB000018 /* SeriesGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeriesGridView.swift; sourceTree = "<group>"; };
 		BB000020BB000020BB000020 /* AppSchema.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSchema.swift; sourceTree = "<group>"; };
 		BB000022BB000022BB000022 /* XLSXService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XLSXService.swift; sourceTree = "<group>"; };
 		BB000024BB000024BB000024 /* XLSXImportPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XLSXImportPreviewView.swift; sourceTree = "<group>"; };
-		BB000010BB000010BB000010 /* MALImportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MALImportView.swift; sourceTree = "<group>"; };
-		BB000012BB000012BB000012 /* Secrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Secrets.swift; sourceTree = "<group>"; };
-		BB000013BB000013BB000013 /* Secrets.template.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Secrets.template.swift; sourceTree = "<group>"; };
-		BB000004BB000004BB000004 /* ComicSearchSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComicSearchSection.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
