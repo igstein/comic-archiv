@@ -12,6 +12,7 @@ struct AddComicSheet: View {
 
     let viewModel: ComicViewModel
     let targetList: ComicList?
+    var prefilledSeries: String?
 
     @State private var title = ""
     @State private var author = ""
@@ -127,6 +128,11 @@ struct AddComicSheet: View {
             }
         }
         .frame(minWidth: 500, minHeight: 500)
+        .onAppear {
+            if let prefilledSeries, !prefilledSeries.isEmpty {
+                series = prefilledSeries
+            }
+        }
     }
 
     private func applyResult(_ result: ComicSearchResult) {

@@ -189,7 +189,7 @@ struct MainView: View {
         }
         .sheet(isPresented: $showingAddComic) {
             if let viewModel = viewModel {
-                AddComicSheet(viewModel: viewModel, targetList: selectedList)
+                AddComicSheet(viewModel: viewModel, targetList: selectedList, prefilledSeries: selectedSeries)
             }
         }
         .sheet(isPresented: $showingMALImport) {
