@@ -15,10 +15,6 @@ A native macOS app for managing your personal comic collection. Catalog your com
 - **XLSX Import/Export** — Import and export your collection as spreadsheet files
 - **Drag & Drop** — Move and copy comics between lists with visual feedback
 
-## Screenshots
-
-*(Coming soon)*
-
 ## Tech Stack
 
 | Component | Technology |
