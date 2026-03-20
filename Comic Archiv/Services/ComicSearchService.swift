@@ -24,12 +24,14 @@ struct ComicSearchResult: Identifiable, Sendable {
         case comicVine
         case comicVineTrade
         case aniList
+        case googleBooks
 
         var label: String {
             switch self {
             case .comicVine:      return "Issue"
             case .comicVineTrade: return "Trade"
             case .aniList:        return "AniList"
+            case .googleBooks:    return "Books"
             }
         }
 
@@ -38,6 +40,7 @@ struct ComicSearchResult: Identifiable, Sendable {
             case .comicVine:      return .blue
             case .comicVineTrade: return .indigo
             case .aniList:        return .purple
+            case .googleBooks:    return .green
             }
         }
     }
@@ -62,8 +65,9 @@ actor ComicSearchService {
         guard !trimmed.isEmpty else { return [] }
         async let cv    = cvMode == .issues ? searchComicVine(query: trimmed) : searchComicVineTrades(query: trimmed)
         async let anime = searchAniList(query: trimmed)
-        let (c, a) = await (cv, anime)
-        return c + a
+        async let books = searchGoogleBooks(query: trimmed)
+        let (c, a, b) = await (cv, anime, books)
+        return c + a + b
     }
 
     // MARK: - Comic Vine
@@ -265,6 +269,61 @@ actor ComicSearchService {
         )
     }
 
+    // MARK: - Google Books
+
+    private func searchGoogleBooks(query: String) async -> [ComicSearchResult] {
+        var components = URLComponents(string: "https://www.googleapis.com/books/v1/volumes")
+        components?.queryItems = [
+            URLQueryItem(name: "q", value: query),
+            URLQueryItem(name: "maxResults", value: "8"),
+            URLQueryItem(name: "printType", value: "books")
+        ]
+        guard let url = components?.url else { return [] }
+
+        do {
+            let (data, _) = try await session.data(for: URLRequest(url: url))
+            let response = try JSONDecoder().decode(GBooksResponse.self, from: data)
+            return (response.items ?? []).map(gBooksToResult)
+        } catch {
+            return []
+        }
+    }
+
+    private func gBooksToResult(_ item: GBooksItem) -> ComicSearchResult {
+        let info = item.volumeInfo
+
+        var date: Date?
+        if let dateStr = info.publishedDate {
+            date = parseDate(dateStr)
+        }
+
+        let authors = info.authors?.joined(separator: ", ") ?? ""
+        let genres  = info.categories?.prefix(3).joined(separator: ", ") ?? ""
+
+        // Prefer larger thumbnail
+        let coverURL: URL? = {
+            if let thumb = info.imageLinks?.thumbnail {
+                // Google returns http URLs; upgrade to https
+                let secure = thumb.replacingOccurrences(of: "http://", with: "https://")
+                return URL(string: secure)
+            }
+            return nil
+        }()
+
+        return ComicSearchResult(
+            id:          "gbooks-\(item.id)",
+            source:      .googleBooks,
+            title:       info.title,
+            issueNumber: "",
+            author:      authors,
+            artist:      "",
+            publisher:   info.publisher ?? "",
+            genre:       genres,
+            coverURL:    coverURL,
+            releaseDate: date
+        )
+    }
+
     // MARK: - Helpers
 
     private func parseDate(_ str: String?) -> Date? {
@@ -446,4 +505,28 @@ private nonisolated struct AniListFuzzyDate: Decodable {
 
 private nonisolated struct AniListCoverImage: Decodable {
     let large: String
+}
+
+// MARK: - Google Books JSON Models
+
+private nonisolated struct GBooksResponse: Decodable {
+    let items: [GBooksItem]?
+}
+
+private nonisolated struct GBooksItem: Decodable {
+    let id: String
+    let volumeInfo: GBooksVolumeInfo
+}
+
+private nonisolated struct GBooksVolumeInfo: Decodable {
+    let title:         String
+    let authors:       [String]?
+    let publisher:     String?
+    let publishedDate: String?
+    let categories:    [String]?
+    let imageLinks:    GBooksImageLinks?
+}
+
+private nonisolated struct GBooksImageLinks: Decodable {
+    let thumbnail: String?
 }
